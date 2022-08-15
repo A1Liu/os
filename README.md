@@ -11,3 +11,8 @@ Pi 3
 
 Pi 4
 - https://www.rpi4os.com/
+
+## Useful Commands
+- Dump out the kernel ELF file:
+
+  `zig build kernel && llvm-objdump --arch-name=aarch64 -D ./zig-out/bin/kernel.elf > ./obj.txt`
