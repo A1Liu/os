@@ -1,7 +1,7 @@
 # os
 
-- Pi 3 is cheaper/free and supported by Qemu
-- Pi 4 is cooler and has a keyboard computer thing oooOooooo
+Target: Pi 3 Model B, aarch64/arm64
+RAM: 1GB
 
 Pi General
 - https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
