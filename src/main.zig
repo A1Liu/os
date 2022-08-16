@@ -35,6 +35,7 @@ comptime {
 
 pub const arm = @import("./asm.zig");
 pub const gpio = @import("./gpio.zig");
+pub const memory = @import("./memory.zig");
 
 export fn main() callconv(.Naked) noreturn {
     gpio.init();
