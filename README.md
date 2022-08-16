@@ -1,8 +1,8 @@
 # os
 
-Architecture Target: 64-bit ARMv8, i.e. aarch64/arm64
-Hardware Target: Pi 3 Model B
-RAM: 1GB
+- Architecture Target: 64-bit ARMv8, i.e. aarch64/arm64
+- Hardware Target: Pi 3 Model B
+- RAM: 1GB
 
 ## Build Dependencies
 - Zig Compiler
