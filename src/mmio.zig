@@ -49,15 +49,15 @@ pub inline fn put32(comptime reg: MmioRegister, data: u32) void {
 // https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
 pub fn init() void {
     var selector = get32(.GPFSEL1);
-    selector &= ~@as(u32, 7 << 12); // clean gpio14
-    selector |= 2 << 12; // set alt5 for gpio14
-    selector &= ~@as(u32, 7 << 15); // clean gpio15
-    selector |= 2 << 15; // set alt5 for gpio 15
+    selector &= ~@as(u32, 0b111 << 12); // clean gpio14
+    selector |= 0b010 << 12; // set alt5 for gpio14
+    selector &= ~@as(u32, 0b111 << 15); // clean gpio15
+    selector |= 0b010 << 15; // set alt5 for gpio 15
     put32(.GPFSEL1, selector);
 
     put32(.GPPUD, 0);
     arm.delay(150);
-    put32(.GPPUDCLK0, (1 << 14) | (1 << 15));
+    put32(.GPPUDCLK0, 0b11 << 14);
     arm.delay(150);
     put32(.GPPUDCLK0, 0);
 
