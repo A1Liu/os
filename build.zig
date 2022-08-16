@@ -68,4 +68,18 @@ pub fn build(b: *Builder) void {
         const run_step = b.step("run", "Run the Kernel in QEMU");
         run_step.dependOn(&run_cmd.step);
     }
+
+    {
+        const dump_cmd_str = &[_][]const u8{
+            "/bin/sh",
+            "-c",
+            "llvm-objdump --arch-name=aarch64 -D ./zig-out/bin/kernel.elf > ./zig-out/bin/dump.txt",
+        };
+
+        const dump_cmd = b.addSystemCommand(dump_cmd_str);
+        dump_cmd.step.dependOn(kernel_step);
+
+        const dump_step = b.step("dump", "Obj-Dump the Kernel ELF file");
+        dump_step.dependOn(&dump_cmd.step);
+    }
 }

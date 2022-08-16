@@ -16,6 +16,9 @@
 - Dump out the kernel ELF file:
   ```
   llvm-objdump --arch-name=aarch64 -D ./zig-out/bin/kernel.elf > ./obj.txt
+
+  # Or use Zig:
+  zig build dump
   ```
 
 - Run the kernel in QEMU:
