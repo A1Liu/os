@@ -1,7 +1,5 @@
 comptime {
     asm (
-        \\.section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
-        \\
         \\.global _start  // Execution starts here
         \\
         \\_start:
