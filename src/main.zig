@@ -111,7 +111,7 @@ pub const memory = @import("./memory.zig");
 export fn main() callconv(.Naked) noreturn {
     mmio.init();
 
-    mmio.uartWrite("Kernel Main Begin\n");
+    mmio.uartWrite("Kernel Main Begin. Hello, World!\n");
 
     const el = asm volatile ("mrs %[val], CurrentEL"
         : [val] "=r" (-> u32),
