@@ -7,16 +7,17 @@ comptime {
             \\  mrs     x1, mpidr_el1
             \\  and     x1, x1, 3
             \\
-            \\  // Check processor ID is zero (executing on main core), else hang
+            \\  // Check processor ID is main core, else hang
             \\  cbz     x1, main_core
             \\
-            \\// We're not on the main core, so hang in an infinite wait loop
+            \\// We're not on the main core, so infinite loop
             \\proc_hang:
             \\  wfe
             \\  b       proc_hang
             \\
-            \\// Reduce privelege of the Kernel down to EL1. Since QEMU starts at EL2,
-            \\// but the Raspberry Pi 3b starts at EL3, we need to do some silly shit here.
+            \\// Reduce privelege of the Kernel down to EL1. Since
+            \\// QEMU starts at EL2, but the Raspberry Pi 3b starts
+            \\// at EL3, we need to do some silly shit here.
             \\main_core:
         ++ asmStr("ldr   x0, ={}\n", .{SCTLR_VALUE_MMU_DISABLED}) ++
             \\  msr   sctlr_el1, x0
@@ -60,6 +61,7 @@ comptime {
             \\  // Clean the BSS section
             \\  ldr     x1, =__bss_start     // Start address
             \\  ldr     w2, =__bss_size      // Size of the section
+            \\
             \\bss_init_loop:
             \\  cbz     w2, start_kernel     // Quit loop if zero
             \\  str     xzr, [x1], 8
@@ -67,9 +69,10 @@ comptime {
             \\  cbnz    w2, bss_init_loop    // Loop if non-zero
             \\
             \\start_kernel:
-            \\  // Jump to our main() routine in C (make sure it doesn't return)
+            \\  // Jump to our kernel main, should be noreturn
             \\  bl      main
-            \\  b       proc_hang // In case it does return, halt the master core too
+            \\  // Just in case, halt the main core too
+            \\  b       proc_hang
     );
 }
 
