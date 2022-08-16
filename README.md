@@ -9,6 +9,9 @@ RAM: 1GB
 - LLVM
 - QEMU for running in a virtual machine
 
+## Confusing Behavior
+- `-Drelease-small` doesn't output anything to UART but `-Drelease-fast` does
+
 ## Useful Commands
 - Dump out the kernel ELF file:
   ```
@@ -17,7 +20,10 @@ RAM: 1GB
 
 - Run the kernel in QEMU:
   ```
-  qemu-system-aarch64 -M raspi3b -serial stdio -kernel ./zig-out/bin/kernel8.img
+  qemu-system-aarch64 -M raspi3b -serial null -chardev stdio,id=uart1 -serial chardev:uart1 -kernel ./zig-out/bin/kernel8.img
+
+  # Or use Zig:
+  zig build run
   ```
 
 ## Useful Resources

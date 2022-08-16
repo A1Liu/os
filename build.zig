@@ -46,4 +46,26 @@ pub fn build(b: *Builder) void {
     };
 
     b.default_step.dependOn(iso_step);
+
+    {
+        const run_cmd_str = &[_][]const u8{
+            "qemu-system-aarch64",
+            "-M",
+            "raspi3b",
+            "-serial",
+            "null",
+            "-chardev",
+            "stdio,id=uart1",
+            "-serial",
+            "chardev:uart1",
+            "-kernel",
+            "./zig-out/bin/kernel8.img",
+        };
+
+        const run_cmd = b.addSystemCommand(run_cmd_str);
+        run_cmd.step.dependOn(b.getInstallStep());
+
+        const run_step = b.step("run", "Run the Kernel in QEMU");
+        run_step.dependOn(&run_cmd.step);
+    }
 }

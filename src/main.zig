@@ -33,6 +33,13 @@ comptime {
     );
 }
 
+pub const arm = @import("./asm.zig");
+pub const gpio = @import("./gpio.zig");
+
 export fn main() callconv(.Naked) noreturn {
+    gpio.init();
+
+    gpio.uartWrite("Hello, World!\r\n");
+
     while (true) {}
 }
