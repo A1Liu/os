@@ -32,13 +32,13 @@ comptime {
 }
 
 pub const arm = @import("./asm.zig");
-pub const gpio = @import("./gpio.zig");
+pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
 
 export fn main() callconv(.Naked) noreturn {
-    gpio.init();
+    mmio.init();
 
-    gpio.uartWrite("Hello, World!\r\n");
+    mmio.uartWrite("Hello, World!\r\n");
 
     while (true) {}
 }
