@@ -27,11 +27,14 @@ pub fn build(b: *Builder) void {
 
     const kernel_step = kernel_step: {
         const kernel = b.addExecutable("kernel.elf", "src/main.zig");
+
+        kernel.addIncludeDir("src");
+        kernel.addAssemblyFile("src/boot.S");
+
         kernel.setTarget(target);
         kernel.setBuildMode(.ReleaseSafe);
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
 
-        // kernel.addAssemblyFile("");
         // kernel.strip = true;
 
         kernel.install();

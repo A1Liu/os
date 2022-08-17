@@ -8,7 +8,7 @@ SECTIONS {
   }
 
   .rodata : {
-    *(.rodata)
+    *(.rodata .rodata.*)
   }
 
   .data : {
