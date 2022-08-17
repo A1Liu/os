@@ -60,13 +60,12 @@ comptime {
             \\
             \\  // Clean the BSS section
             \\  ldr     x1, =__bss_start     // Start address
-            \\  ldr     w2, =__bss_size      // Size of the section
+            \\  ldr     x2, =__bss_end      // Size of the section
             \\
             \\bss_init_loop:
-            \\  cbz     w2, start_kernel     // Quit loop if zero
             \\  str     xzr, [x1], 8
-            \\  sub     w2, w2, 1
-            \\  cbnz    w2, bss_init_loop    // Loop if non-zero
+            \\  cmp     x1, x2
+            \\  blt     bss_init_loop    // Loop if non-zero
             \\
             \\start_kernel:
             \\  // Jump to our kernel main, should be noreturn
@@ -112,7 +111,7 @@ const builtin = @import("builtin");
 pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
-// pub const interrupts = @import("./interrupts.zig");
+pub const interrupts = @import("./interrupts.zig");
 pub const globals = @import("./globals.zig").globals;
 
 pub const strip_debug_info = true;
@@ -161,7 +160,7 @@ export fn main() callconv(.C) noreturn {
     // _ = interrupts;
 
     std.log.info("Kernel Main Begin. Hello, World!", .{});
-    // std.log.info("{s}", .{"asdf"});
+    std.log.info("{s}", .{"asdf"});
 
     const el = asm volatile ("mrs %[val], CurrentEL"
         : [val] "=r" (-> u32),
