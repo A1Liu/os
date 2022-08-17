@@ -19,8 +19,7 @@ pub fn build(b: *Builder) void {
         .cpu_arch = Target.Cpu.Arch.aarch64,
         .os_tag = Target.Os.Tag.freestanding,
         .abi = Target.Abi.none,
-
-        .cpu_features_sub = disabled_features,
+        .cpu_model = .baseline,
     };
 
     // const mode = b.standardReleaseOptions();
