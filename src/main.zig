@@ -107,18 +107,61 @@ const SPSR_VALUE: u32 = value: {
 };
 
 const std = @import("std");
+const builtin = @import("builtin");
+
 pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
-pub const interrupts = @import("./interrupts.zig");
+// pub const interrupts = @import("./interrupts.zig");
 pub const globals = @import("./globals.zig").globals;
+
+pub const strip_debug_info = true;
+pub const have_error_return_tracing = false;
+
+pub fn log(
+    comptime message_level: std.log.Level,
+    comptime scope: @Type(.EnumLiteral),
+    comptime fmt: []const u8,
+    args: anytype,
+) void {
+    _ = scope;
+    _ = message_level;
+    _ = fmt;
+    _ = args;
+
+    // if (@enumToInt(message_level) > @enumToInt(std.log.level)) {
+    //     return;
+    // }
+
+    var buf: [500]u8 = undefined;
+
+    const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
+        mmio.uartWrite("Log failed, message too long\n");
+        return;
+    };
+    mmio.uartWrite(output);
+}
+
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
+    @setCold(true);
+
+    _ = error_return_trace;
+
+    mmio.uartWrite("PANICKED!\n");
+    mmio.uartWrite(msg);
+
+    while (true) {
+        asm volatile ("nop");
+    }
+}
 
 export fn main() callconv(.Naked) noreturn {
     mmio.init();
 
-    _ = interrupts;
+    // _ = interrupts;
 
-    mmio.uartWrite("Kernel Main Begin. Hello, World!\n");
+    std.log.info("Kernel Main Begin. Hello, World!", .{});
+    // std.log.info("{s}", .{"asdf"});
 
     const el = asm volatile ("mrs %[val], CurrentEL"
         : [val] "=r" (-> u32),
@@ -132,5 +175,7 @@ export fn main() callconv(.Naked) noreturn {
         else => mmio.uartWrite("Hello, World!\n"),
     }
 
-    while (true) {}
+    while (true) {
+        asm volatile ("nop");
+    }
 }

@@ -27,25 +27,59 @@ const mmio = os.mmio;
 const invalid_handler_names = [_][]const u8{
     "sync_invalid_el1t",
     "irq_invalid_el1t",
-    // "fiq_invalid_el1t",
-    // "error_invalid_el1t",
-    // "sync_invalid_el1h",
-    // "fiq_invalid_el1h",
-    // "error_invalid_el1h",
-    // "sync_invalid_el0_64",
-    // "irq_invalid_el0_64",
-    // "fiq_invalid_el0_64",
-    // "error_invalid_el0_64",
-    // "sync_invalid_el0_32",
-    // "irq_invalid_el0_32",
-    // "fiq_invalid_el0_32",
-    // "error_invalid_el0_32",
-    // "el1_irq",
+    "fiq_invalid_el1t",
+    "error_invalid_el1t",
+    "sync_invalid_el1h",
+    "fiq_invalid_el1h",
+    "error_invalid_el1h",
+    "sync_invalid_el0_64",
+    "irq_invalid_el0_64",
+    "fiq_invalid_el0_64",
+    "error_invalid_el0_64",
+    "sync_invalid_el0_32",
+    "irq_invalid_el0_32",
+    "fiq_invalid_el0_32",
+    "error_invalid_el0_32",
+    "el1_irq",
 };
 
 comptime {
     asm (
-        \\
+        \\.align 11
+        \\.global interrupt_vectors
+        \\interrupt_vectors:
+        \\  .align 7
+        \\  b  sync_invalid_el1t       // Synchronous EL1t
+        \\  .align 7
+        \\  b  irq_invalid_el1t        // IRQ EL1t
+        \\  .align 7
+        \\  b  fiq_invalid_el1t        // FIQ EL1t
+        \\  .align 7
+        \\  b  error_invalid_el1t      // Error EL1t
+        \\  .align 7
+        \\  b  sync_invalid_el1h       // Synchronous EL1h
+        \\  .align 7
+        \\  b  el1_irq                 // IRQ EL1h
+        \\  .align 7
+        \\  b  fiq_invalid_el1h        // FIQ EL1h
+        \\  .align 7
+        \\  b  error_invalid_el1h      // Error EL1h
+        \\  .align 7
+        \\  b  sync_invalid_el0_64     // Synchronous 64-bit EL0
+        \\  .align 7
+        \\  b  irq_invalid_el0_64      // IRQ 64-bit EL0
+        \\  .align 7
+        \\  b  fiq_invalid_el0_64      // FIQ 64-bit EL0
+        \\  .align 7
+        \\  b  error_invalid_el0_64    // Error 64-bit EL0
+        \\  .align 7
+        \\  b  sync_invalid_el0_32     // Synchronous 32-bit EL0
+        \\  .align 7
+        \\  b  irq_invalid_el0_32      // IRQ 32-bit EL0
+        \\  .align 7
+        \\  b  fiq_invalid_el0_32      // FIQ 32-bit EL0
+        \\  .align 7
+        \\  b  error_invalid_el0_32    // Error 32-bit EL0
     );
 
     inline for (invalid_handler_names) |name, idx| {
