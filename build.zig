@@ -5,10 +5,22 @@ const CrossTarget = @import("std").zig.CrossTarget;
 const Feature = @import("std").Target.Cpu.Feature;
 
 pub fn build(b: *Builder) void {
+    const features = Target.aarch64.Feature;
+
+    var disabled_features = Feature.Set.empty;
+
+    disabled_features.addFeature(@enumToInt(features.ete));
+    disabled_features.addFeature(@enumToInt(features.fuse_aes));
+    disabled_features.addFeature(@enumToInt(features.neon));
+    disabled_features.addFeature(@enumToInt(features.perfmon));
+    disabled_features.addFeature(@enumToInt(features.use_postra_scheduler));
+
     const target = CrossTarget{
         .cpu_arch = Target.Cpu.Arch.aarch64,
         .os_tag = Target.Os.Tag.freestanding,
         .abi = Target.Abi.none,
+
+        .cpu_features_sub = disabled_features,
     };
 
     // const mode = b.standardReleaseOptions();

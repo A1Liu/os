@@ -133,7 +133,7 @@ pub fn log(
     //     return;
     // }
 
-    var buf: [500]u8 = undefined;
+    var buf: [200]u8 = undefined;
 
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
         mmio.uartWrite("Log failed, message too long\n");
@@ -155,7 +155,7 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
     }
 }
 
-export fn main() callconv(.Naked) noreturn {
+export fn main() callconv(.C) noreturn {
     mmio.init();
 
     // _ = interrupts;
