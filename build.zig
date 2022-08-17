@@ -30,6 +30,8 @@ pub fn build(b: *Builder) void {
         kernel.setTarget(target);
         kernel.setBuildMode(.ReleaseSafe);
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
+
+        // kernel.addAssemblyFile("");
         // kernel.strip = true;
 
         kernel.install();
