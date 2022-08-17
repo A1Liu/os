@@ -32,6 +32,7 @@ pub fn log(
         mmio.uartWrite("Log failed, message too long\n");
         return;
     };
+
     mmio.uartWrite(output);
 }
 
@@ -53,9 +54,6 @@ export fn main() callconv(.C) noreturn {
 
     interrupts.init();
 
-    std.log.info("Kernel Main Begin. Hello, World!", .{});
-    // std.log.info("{s}", .{"asdf"});
-
     const el = asm volatile ("mrs %[val], CurrentEL"
         : [val] "=r" (-> u32),
     );
@@ -67,6 +65,9 @@ export fn main() callconv(.C) noreturn {
         3 => mmio.uartWrite("Hello, 3!\n"),
         else => mmio.uartWrite("Hello, World!\n"),
     }
+
+    std.log.info("Kernel Main Begin. Hello, World!", .{});
+    // std.log.info("{s}", .{"asdf"});
 
     while (true) {
         asm volatile ("nop");

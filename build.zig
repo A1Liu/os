@@ -73,6 +73,8 @@ pub fn build(b: *Builder) void {
             "qemu-system-aarch64",
             "-M",
             "raspi3b",
+            "-cpu",
+            "cortex-a57",
             "-serial",
             "null",
             "-chardev",
