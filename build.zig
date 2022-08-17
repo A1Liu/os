@@ -31,7 +31,10 @@ pub fn build(b: *Builder) void {
         kernel.addAssemblyFile("src/boot.S");
 
         kernel.setTarget(target);
-        kernel.setBuildMode(.ReleaseSafe);
+
+        kernel.setBuildMode(.Debug);
+        // kernel.setBuildMode(.ReleaseSafe);
+
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
 
         // kernel.strip = true;

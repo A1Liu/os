@@ -11,6 +11,8 @@ pub const log_level = .debug;
 pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
 
+var buf: [200]u8 = [1]u8{0} ** 200;
+
 pub fn log(
     comptime message_level: std.log.Level,
     comptime scope: @Type(.EnumLiteral),
@@ -25,7 +27,6 @@ pub fn log(
     // if (@enumToInt(message_level) > @enumToInt(std.log.level)) {
     //     return;
     // }
-    var buf: [200]u8 = [1]u8{0} ** 200;
 
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
         mmio.uartWrite("Log failed, message too long\n");
@@ -50,7 +51,7 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 export fn main() callconv(.C) noreturn {
     mmio.init();
 
-    // _ = interrupts;
+    interrupts.init();
 
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     // std.log.info("{s}", .{"asdf"});

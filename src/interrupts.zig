@@ -85,8 +85,10 @@ comptime {
     inline for (invalid_handler_names) |name, idx| {
         const index = std.fmt.comptimePrint("{}", .{idx});
 
-        asm (name ++ ":\n" ++ RegisterState.save_registers ++ "mov x9, " ++ index ++ "\n" ++
-                "bl invalidHandlerImpl");
+        asm (name ++ ":\n" ++ RegisterState.save_registers ++
+                "mov x0, sp\n" ++
+                "mov x1, " ++ index ++ "\n" ++
+                "bl emptyHandlerImpl");
     }
 }
 
@@ -176,12 +178,19 @@ const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
-pub export fn invalidHandlerImpl(state: *RegisterState, index: usize) callconv(.C) noreturn {
+pub fn init() void {
+    asm volatile (
+        \\adr    x0, interrupt_vectors        // load VBAR_EL1 with virtual
+        \\msr    vbar_el1, x0
+        ::: "x0");
+}
+
+pub export fn emptyHandlerImpl(state: *RegisterState, index: usize) callconv(.C) noreturn {
     _ = state;
 
-    // os.mmio.uartWrite("Got invalid exception: ");
+    os.mmio.uartWrite("Got unhandled exception: ");
     os.mmio.uartWrite(invalid_handler_names[index]);
-    // os.mmio.uartWrite("\n");
+    os.mmio.uartWrite("\n");
 
     while (true) {
         asm volatile ("nop");
