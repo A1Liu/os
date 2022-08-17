@@ -116,6 +116,8 @@ pub const globals = @import("./globals.zig").globals;
 export fn main() callconv(.Naked) noreturn {
     mmio.init();
 
+    _ = interrupts;
+
     mmio.uartWrite("Kernel Main Begin. Hello, World!\n");
 
     const el = asm volatile ("mrs %[val], CurrentEL"
