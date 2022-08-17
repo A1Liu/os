@@ -2,6 +2,11 @@ const std = @import("std");
 const os = @import("root");
 const mmio = os.mmio;
 
+// https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/entry.S
+//
+// Handlers defined:
+// https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/irq.c
+
 // sync_invalid_el1t:
 // irq_invalid_el1t:
 // fiq_invalid_el1t:
