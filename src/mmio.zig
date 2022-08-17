@@ -13,6 +13,8 @@ const AUX_BASE = (GPIO_BASE + 0x15000);
 // The offsets for Mailbox registers
 
 const MmioRegister = enum(u32) {
+    IRQ_PENDING_1 = MMIO_BASE + 0x0000B204,
+
     GPFSEL1 = GPIO_BASE + 0x4,
 
     GPSET0 = GPIO_BASE + 0x1C,

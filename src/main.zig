@@ -110,6 +110,8 @@ const std = @import("std");
 pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
+pub const interrupts = @import("./interrupts.zig");
+pub const globals = @import("./globals.zig").globals;
 
 export fn main() callconv(.Naked) noreturn {
     mmio.init();

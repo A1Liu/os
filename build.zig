@@ -11,12 +11,12 @@ pub fn build(b: *Builder) void {
         .abi = Target.Abi.none,
     };
 
-    const mode = b.standardReleaseOptions();
+    // const mode = b.standardReleaseOptions();
 
     const kernel_step = kernel_step: {
         const kernel = b.addExecutable("kernel.elf", "src/main.zig");
         kernel.setTarget(target);
-        kernel.setBuildMode(mode);
+        kernel.setBuildMode(.ReleaseFast);
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
         kernel.install();
 
