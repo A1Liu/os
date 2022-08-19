@@ -7,23 +7,6 @@ const mmio = os.mmio;
 // Handlers defined:
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/irq.c
 
-// sync_invalid_el1t:
-// irq_invalid_el1t:
-// fiq_invalid_el1t:
-// error_invalid_el1t:
-// sync_invalid_el1h:
-// fiq_invalid_el1h:
-// error_invalid_el1h:
-// sync_invalid_el0_64:
-// irq_invalid_el0_64:
-// fiq_invalid_el0_64:
-// error_invalid_el0_64:
-// sync_invalid_el0_32:
-// irq_invalid_el0_32:
-// fiq_invalid_el0_32:
-// error_invalid_el0_32:
-// el1_irq:
-
 const invalid_handler_names = [_][]const u8{
     "sync_invalid_el1t",
     "irq_invalid_el1t",
@@ -86,11 +69,16 @@ comptime {
         const index = std.fmt.comptimePrint("{}", .{idx});
 
         asm (name ++ ":\n" ++ RegisterState.save_registers ++
-                "mov x0, sp\n" ++
                 "mov x1, " ++ index ++ "\n" ++
-                "bl emptyHandlerImpl");
+                \\mov x0, sp
+                \\mrs x2, esr_el1
+                \\mrs x3, elr_el1
+                \\bl emptyHandlerImpl
+        );
     }
 }
+
+// copy-paste links to the ARM docs in the error message
 
 const Handler = fn (state: *RegisterState) callconv(.C) void;
 const HandlerPtr = fn () callconv(.Naked) void;
@@ -185,8 +173,10 @@ pub fn init() void {
         ::: "x0");
 }
 
-pub export fn emptyHandlerImpl(state: *RegisterState, index: usize) callconv(.C) noreturn {
+pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
     _ = state;
+    _ = esr;
+    _ = elr;
 
     os.mmio.uartWrite("Got unhandled exception: ");
     os.mmio.uartWrite(invalid_handler_names[index]);

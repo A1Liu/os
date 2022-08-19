@@ -22,7 +22,7 @@ pub fn build(b: *Builder) void {
         .cpu_model = .baseline,
     };
 
-    // const mode = b.standardReleaseOptions();
+    const mode = b.standardReleaseOptions();
 
     const kernel_step = kernel_step: {
         const kernel = b.addExecutable("kernel.elf", "src/main.zig");
@@ -32,7 +32,7 @@ pub fn build(b: *Builder) void {
 
         kernel.setTarget(target);
 
-        kernel.setBuildMode(.Debug);
+        kernel.setBuildMode(mode);
         // kernel.setBuildMode(.ReleaseSafe);
 
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });

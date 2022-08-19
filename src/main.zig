@@ -13,6 +13,16 @@ pub const have_error_return_tracing = false;
 
 var buf: [200]u8 = [1]u8{0} ** 200;
 
+// TODO:
+//
+// We're getting 0b000111 in the ESR_EL1 register's exception class, which means
+// floating point/simd error.
+//
+// Fix is to write to CPACR_EL1
+//
+// ESR_EL1: https://developer.arm.com/documentation/ddi0595/2020-12/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
+// CPACR_EL1: https://developer.arm.com/documentation/ddi0595/2020-12/AArch64-Registers/CPACR-EL1--Architectural-Feature-Access-Control-Register?lang=en#fieldset_0-21_20
+
 pub fn log(
     comptime message_level: std.log.Level,
     comptime scope: @Type(.EnumLiteral),
