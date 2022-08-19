@@ -7,11 +7,9 @@ pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
 pub const globals = @import("./globals.zig").globals;
 
-pub const log_level = .debug;
+pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
-
-var buf: [200]u8 = [1]u8{0} ** 200;
 
 pub fn log(
     comptime message_level: std.log.Level,
@@ -21,13 +19,8 @@ pub fn log(
 ) void {
     _ = scope;
     _ = message_level;
-    _ = fmt;
-    _ = args;
 
-    // if (@enumToInt(message_level) > @enumToInt(std.log.level)) {
-    //     return;
-    // }
-
+    var buf: [200]u8 = undefined;
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
         mmio.uartWrite("Log failed, message too long\n");
         return;
@@ -41,8 +34,9 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
     _ = error_return_trace;
 
-    mmio.uartWrite("PANICKED!\n");
+    mmio.uartWrite("PANICKED: ");
     mmio.uartWrite(msg);
+    mmio.uartWrite("\n");
 
     while (true) {
         asm volatile ("nop");
@@ -61,6 +55,14 @@ export fn main() callconv(.C) noreturn {
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
 
+    std.log.info(
+        \\
+        \\-----------------------------------------
+        \\
+        \\          Entering busy loop
+        \\
+        \\-----------------------------------------
+    , .{});
     while (true) {
         asm volatile ("nop");
     }
