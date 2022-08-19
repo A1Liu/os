@@ -42,3 +42,14 @@
 #define SPSR_MASK_ALL (7 << 6)
 #define SPSR_EL1h (5 << 0)
 #define SPSR_VALUE (SPSR_MASK_ALL | SPSR_EL1h)
+
+// ***************************************
+// CPACR_EL1,
+// https://developer.arm.com/documentation/ddi0595/2020-12/AArch64-Registers/CPACR-EL1--Architectural-Feature-Access-Control-Register?lang=en#fieldset_0-21_20
+// ***************************************
+
+// Enables vector registers, so that calling into the Zig standard library
+// doesn't cause a synchronous exception
+#define CPACR_FPEN (3 << 20)
+
+#define CPACR_VALUE (CPACR_FPEN)

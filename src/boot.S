@@ -21,6 +21,9 @@ main_core:
   ldr   x0, =SCTLR_VALUE_MMU_DISABLED
   msr   sctlr_el1, x0
 
+  ldr   x0, =CPACR_VALUE
+  msr   cpacr_el1, x0
+
   mrs x0, CurrentEL
   lsr x0, x0, 2
   cmp x0, 3

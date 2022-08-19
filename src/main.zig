@@ -68,16 +68,8 @@ export fn main() callconv(.C) noreturn {
         : [val] "=r" (-> u32),
     );
 
-    switch (el >> 2) {
-        0 => mmio.uartWrite("Hello, 0!\n"),
-        1 => mmio.uartWrite("Hello, 1!\n"),
-        2 => mmio.uartWrite("Hello, 2!\n"),
-        3 => mmio.uartWrite("Hello, 3!\n"),
-        else => mmio.uartWrite("Hello, World!\n"),
-    }
-
     std.log.info("Kernel Main Begin. Hello, World!", .{});
-    // std.log.info("{s}", .{"asdf"});
+    std.log.info("Exception Level: {}", .{el >> 2});
 
     while (true) {
         asm volatile ("nop");
