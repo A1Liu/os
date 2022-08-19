@@ -4,3 +4,9 @@ pub fn delay(count: u32) void {
         asm volatile ("nop");
     }
 }
+
+pub fn readSp() usize {
+    return asm volatile ("mov %[a], sp"
+        : [a] "=r" (-> usize),
+    );
+}

@@ -1,5 +1,6 @@
 const std = @import("std");
 const os = @import("root");
+const arm = os.arm;
 const mmio = os.mmio;
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/entry.S
@@ -181,6 +182,9 @@ pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, el
     os.mmio.uartWrite("Got unhandled exception: ");
     os.mmio.uartWrite(invalid_handler_names[index]);
     os.mmio.uartWrite("\n");
+
+    const sp = arm.readSp();
+    std.log.info("interrupt sp: {x}", .{sp});
 
     while (true) {
         asm volatile ("nop");

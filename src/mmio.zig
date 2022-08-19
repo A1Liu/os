@@ -13,7 +13,16 @@ const AUX_BASE = (GPIO_BASE + 0x15000);
 // The offsets for Mailbox registers
 
 const MmioRegister = enum(u32) {
+    IRQ_BASIC_PENDING = MMIO_BASE + 0x0000B200,
     IRQ_PENDING_1 = MMIO_BASE + 0x0000B204,
+    IRQ_PENDING_2 = MMIO_BASE + 0x0000B208,
+    FIQ_CONTROL = MMIO_BASE + 0x0000B20C,
+    ENABLE_IRQS_1 = MMIO_BASE + 0x0000B210,
+    ENABLE_IRQS_2 = MMIO_BASE + 0x0000B214,
+    ENABLE_BASIC_IRQS = MMIO_BASE + 0x0000B218,
+    DISABLE_IRQS_1 = MMIO_BASE + 0x0000B21C,
+    DISABLE_IRQS_2 = MMIO_BASE + 0x0000B220,
+    DISABLE_BASIC_IRQS = MMIO_BASE + 0x0000B224,
 
     GPFSEL1 = GPIO_BASE + 0x4,
 
@@ -38,6 +47,19 @@ const MmioRegister = enum(u32) {
     AUX_MU_CNTL_REG = AUX_BASE + 0x60,
     AUX_MU_STAT_REG = AUX_BASE + 0x64,
     AUX_MU_BAUD_REG = AUX_BASE + 0x68,
+
+    // Timer
+    TIMER_CS = MMIO_BASE + 0x00003000,
+    TIMER_CLO = MMIO_BASE + 0x00003004,
+    TIMER_CHI = MMIO_BASE + 0x00003008,
+    TIMER_C0 = MMIO_BASE + 0x0000300C,
+    TIMER_C1 = MMIO_BASE + 0x00003010,
+    TIMER_C2 = MMIO_BASE + 0x00003014,
+    TIMER_C3 = MMIO_BASE + 0x00003018,
+};
+
+pub const constants = struct {
+    pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
 pub inline fn get32(comptime reg: MmioRegister) u32 {
