@@ -10,3 +10,9 @@ pub fn readSp() usize {
         : [a] "=r" (-> usize),
     );
 }
+
+pub fn mrs(comptime name: []const u8) usize {
+    return asm ("mrs %[reg], " ++ name
+        : [reg] "=r" (-> usize),
+    );
+}

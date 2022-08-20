@@ -1,16 +1,15 @@
 const os = @import("root");
 const arm = os.arm;
 
+pub const constants = struct {
+    pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
+
+    pub const TIMER_CS_M1: u32 = 1 << 1;
+};
+
 const MMIO_BASE: u32 = 0x3F000000;
-
-// The offsets for reach register.
 const GPIO_BASE = MMIO_BASE + 0x200000;
-
-// The base address for UART.
-// for raspi4 0xFE201000, raspi2 & 3 0x3F201000, and 0x20201000 for raspi1
 const AUX_BASE = (GPIO_BASE + 0x15000);
-
-// The offsets for Mailbox registers
 
 const MmioRegister = enum(u32) {
     IRQ_BASIC_PENDING = MMIO_BASE + 0x0000B200,
@@ -25,15 +24,10 @@ const MmioRegister = enum(u32) {
     DISABLE_BASIC_IRQS = MMIO_BASE + 0x0000B224,
 
     GPFSEL1 = GPIO_BASE + 0x4,
-
     GPSET0 = GPIO_BASE + 0x1C,
     GPCLR0 = GPIO_BASE + 0x28,
-
-    // Controls actuation of pull up/down to ALL GPIO pins.
-    GPPUD = GPIO_BASE + 0x94,
-
-    // Controls actuation of pull up/down for specific GPIO pin.
-    GPPUDCLK0 = GPIO_BASE + 0x98,
+    GPPUD = GPIO_BASE + 0x94, // Controls actuation of pull up/down to ALL GPIO pins.
+    GPPUDCLK0 = GPIO_BASE + 0x98, // Controls actuation of pull up/down for specific GPIO pin.
 
     AUX_ENABLES = AUX_BASE + 0x04,
     AUX_MU_IO_REG = AUX_BASE + 0x40,
@@ -58,12 +52,6 @@ const MmioRegister = enum(u32) {
     TIMER_C3 = MMIO_BASE + 0x00003018,
 };
 
-pub const constants = struct {
-    pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
-
-    pub const TIMER_CS_M1: u32 = 1 << 1;
-};
-
 pub inline fn get32(comptime reg: MmioRegister) u32 {
     return @intToPtr(*volatile u32, @enumToInt(reg)).*;
 }
@@ -72,7 +60,7 @@ pub inline fn put32(comptime reg: MmioRegister, data: u32) void {
     @intToPtr(*volatile u32, @enumToInt(reg)).* = data;
 }
 
-// https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
+// https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson01/rpi-os.md#mini-uart-initialization
 pub fn init() void {
     var selector = get32(.GPFSEL1);
     selector &= ~@as(u32, 0b111 << 12); // clean gpio14

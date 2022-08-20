@@ -20,7 +20,7 @@ pub fn log(
     _ = scope;
     _ = message_level;
 
-    var buf: [200]u8 = undefined;
+    var buf: [256]u8 = undefined;
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
         mmio.uartWrite("Log failed, message too long\n");
         return;
@@ -73,7 +73,16 @@ export fn main() callconv(.C) noreturn {
         \\
         \\-----------------------------------------
     , .{});
+
+    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
     while (true) {
         asm volatile ("nop");
+
+        const value =
+            @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        if (timer_value != value) {
+            timer_value = value;
+            std.log.info("Timer is now: {}", .{value});
+        }
     }
 }

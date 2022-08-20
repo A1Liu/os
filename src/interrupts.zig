@@ -2,6 +2,7 @@ const std = @import("std");
 const os = @import("root");
 const arm = os.arm;
 const mmio = os.mmio;
+const globals = os.globals;
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/entry.S
 //
@@ -72,7 +73,9 @@ comptime {
             \\mov x0, sp
             \\bl handleIrq
             \\
-        ++ RegisterState.pop_registers);
+        ++ RegisterState.pop_registers ++
+            \\
+    );
 
     inline for (invalid_handler_names) |name, idx| {
         const index = std.fmt.comptimePrint("{}", .{idx});
@@ -82,7 +85,7 @@ comptime {
                 \\mov x0, sp
                 \\mrs x2, esr_el1
                 \\mrs x3, elr_el1
-                \\bl emptyHandlerImpl
+                \\bl emptyHandler
         );
     }
 }
@@ -179,7 +182,6 @@ const IRQ_FLAGS = struct {
 };
 
 const interval: u32 = 1000000;
-var time_counter: u32 = 0;
 
 pub fn init() void {
     asm volatile (
@@ -188,25 +190,31 @@ pub fn init() void {
         ::: "x0");
 
     {
-        time_counter = mmio.get32(.TIMER_CLO);
-        mmio.put32(.TIMER_C1, time_counter + interval);
+        const counter_value = mmio.get32(.TIMER_CLO);
+        @atomicStore(u32, &globals.time_counter, counter_value, .SeqCst);
+        mmio.put32(.TIMER_C1, counter_value + interval);
     }
 
     mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
     asm volatile ("msr daifclr, #2");
 }
 
-pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
-    _ = state;
-    _ = esr;
-    _ = elr;
+pub export fn emptyHandler(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
+    unhandledException(state, invalid_handler_names[index], esr, elr);
+}
 
-    os.mmio.uartWrite("Got unhandled exception: ");
-    os.mmio.uartWrite(invalid_handler_names[index]);
-    os.mmio.uartWrite("\n");
+pub fn unhandledException(state: *RegisterState, name: []const u8, esr: u64, elr: u64) noreturn {
+    _ = state;
 
     const sp = arm.readSp();
-    std.log.info("interrupt sp: {x}", .{sp});
+
+    std.log.err(
+        \\Unhandled Exception
+        \\  name: {s}
+        \\    sp: 0x{x:0>16}
+        \\   esr: 0x{x:0>16}
+        \\   elr: 0x{x:0>16}
+    , .{ name, sp, esr, elr });
 
     while (true) {
         asm volatile ("nop");
@@ -216,8 +224,9 @@ pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, el
 fn handleTimerInterrupt(state: *RegisterState) void {
     _ = state;
 
-    time_counter += interval;
-    mmio.put32(.TIMER_C1, time_counter + interval);
+    const prev_value = @atomicRmw(u32, &globals.time_counter, .Add, interval, .SeqCst);
+    const next_interrupt_at = prev_value + interval + interval;
+    mmio.put32(.TIMER_C1, next_interrupt_at);
     mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
 
     os.mmio.uartWrite("Timer Int\n");
@@ -230,11 +239,9 @@ export fn handleIrq(state: *RegisterState) void {
         mmio.constants.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
 
         else => {
-            os.mmio.uartWrite("Got unhandled exception: el1_irq\n");
-
-            while (true) {
-                asm volatile ("nop");
-            }
+            const esr = arm.mrs("esr_el1");
+            const elr = arm.mrs("elr_el1");
+            unhandledException(state, "el1_irq", esr, elr);
         },
     }
 }
