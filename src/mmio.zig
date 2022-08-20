@@ -60,6 +60,8 @@ const MmioRegister = enum(u32) {
 
 pub const constants = struct {
     pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
+
+    pub const TIMER_CS_M1: u32 = 1 << 1;
 };
 
 pub inline fn get32(comptime reg: MmioRegister) u32 {

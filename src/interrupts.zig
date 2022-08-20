@@ -24,7 +24,6 @@ const invalid_handler_names = [_][]const u8{
     "irq_invalid_el0_32",
     "fiq_invalid_el0_32",
     "error_invalid_el0_32",
-    "el1_irq",
 };
 
 comptime {
@@ -65,6 +64,15 @@ comptime {
         \\  .align 7
         \\  b  error_invalid_el0_32    // Error 32-bit EL0
     );
+
+    asm ("" ++
+            \\el1_irq:
+            \\
+        ++ RegisterState.save_registers ++
+            \\mov x0, sp
+            \\bl handleIrq
+            \\
+        ++ RegisterState.pop_registers);
 
     inline for (invalid_handler_names) |name, idx| {
         const index = std.fmt.comptimePrint("{}", .{idx});
@@ -139,7 +147,8 @@ pub const RegisterState = extern struct {
         \\   stp  x26, x27, [sp, #16 * 13]
         \\   stp  x28, x29, [sp, #16 * 14]
         \\   str  x30, [sp, #16 * 15]
-    ++ "\n";
+        \\
+    ;
 
     const pop_registers =
         \\   ldp  x0, x1, [sp, #16 * 0]
@@ -158,20 +167,33 @@ pub const RegisterState = extern struct {
         \\   ldp  x26, x27, [sp, #16 * 13]
         \\   ldp  x28, x29, [sp, #16 * 14]
         \\   ldr  x30, [sp, #16 * 15]
-    ++ "\n   add  sp, sp, " ++ size_str ++ "\n" ++
+        \\
+    ++ "     add  sp, sp, " ++ size_str ++ "\n" ++
         \\   eret
-    ++ "\n";
+        \\
+    ;
 };
 
 const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
+const interval: u32 = 1000000;
+var time_counter: u32 = 0;
+
 pub fn init() void {
     asm volatile (
         \\adr    x0, interrupt_vectors        // load VBAR_EL1 with virtual
         \\msr    vbar_el1, x0
         ::: "x0");
+
+    {
+        time_counter = mmio.get32(.TIMER_CLO);
+        mmio.put32(.TIMER_C1, time_counter + interval);
+    }
+
+    mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
+    asm volatile ("msr daifclr, #2");
 }
 
 pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
@@ -191,8 +213,30 @@ pub export fn emptyHandlerImpl(state: *RegisterState, index: usize, esr: u64, el
     }
 }
 
-pub fn handleTimerInterrupt(state: *RegisterState) callconv(.C) void {
+fn handleTimerInterrupt(state: *RegisterState) void {
     _ = state;
+
+    time_counter += interval;
+    mmio.put32(.TIMER_C1, time_counter + interval);
+    mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
+
+    os.mmio.uartWrite("Timer Int\n");
+}
+
+export fn handleIrq(state: *RegisterState) void {
+    _ = state;
+    const irq = mmio.get32(.IRQ_PENDING_1);
+    switch (irq) {
+        mmio.constants.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
+
+        else => {
+            os.mmio.uartWrite("Got unhandled exception: el1_irq\n");
+
+            while (true) {
+                asm volatile ("nop");
+            }
+        },
+    }
 }
 
 pub fn enableIrqs() void {
