@@ -78,8 +78,7 @@ export fn main() callconv(.C) noreturn {
     while (true) {
         asm volatile ("nop");
 
-        const value =
-            @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
         if (timer_value != value) {
             timer_value = value;
             std.log.info("Timer is now: {}", .{value});
