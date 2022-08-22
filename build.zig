@@ -37,6 +37,8 @@ pub fn build(b: *Builder) void {
 
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
 
+        // kernel.force_pic = true;
+
         // kernel.strip = true;
 
         kernel.install();

@@ -11,6 +11,12 @@ pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
 
+// TODO:
+// page mappings
+// page allocators
+// interrupt-based mini-uart handler
+// scheduler
+
 pub fn log(
     comptime message_level: std.log.Level,
     comptime scope: @Type(.EnumLiteral),
@@ -46,14 +52,6 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 export fn main() callconv(.C) noreturn {
     mmio.init();
     interrupts.init();
-
-    // {
-    //     const timer_val = mmio.get32(.TIMER_CLO) + 200000;
-    //     mmio.put32(.TIMER_C1, timer_val);
-    // }
-
-    // mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
-    // asm volatile ("msr daifclr, #2");
 
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});
