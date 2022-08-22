@@ -53,6 +53,8 @@ export fn main() callconv(.C) noreturn {
     mmio.init();
     interrupts.init();
 
+    _ = memory;
+
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});
 
