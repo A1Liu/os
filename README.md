@@ -9,9 +9,6 @@
 - LLVM for `llvm-objdump` and `lldb`
 - QEMU for running in a virtual machine
 
-## Confusing Behavior
-- `-Drelease-small` doesn't output anything to UART but `-Drelease-fast` does
-
 ## Useful Commands
 - Dump out the kernel ELF file:
   ```
