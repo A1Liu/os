@@ -72,7 +72,7 @@ main_core_el1:
 bss_init_loop:
   str     xzr, [x1], 8
   cmp     x1, x2
-  blt     bss_init_loop    // Loop if non-zero
+  blt     bss_init_loop
 
 start_kernel:
   # Jump to our kernel main, should be noreturn
