@@ -6,7 +6,7 @@
 
 ## Build Dependencies
 - Zig Compiler
-- LLVM
+- LLVM for `llvm-objdump` and `lldb`
 - QEMU for running in a virtual machine
 
 ## Confusing Behavior
