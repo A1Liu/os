@@ -62,8 +62,12 @@ main_core_el1:
   mov     sp, x1
 
   # Clean the BSS section
-  adr     x1, __bss_start     // Start address
-  adr     x2, __bss_end       // End address
+  # ADR is technically a real instruction that adds an immediate,
+  # but in this case, we defined __bss_start in the link as a label,
+  # so the assembler interprets it as a pseudo-op, and does a
+  # PC-relative computation to calculate the address of __bss_start
+  adr     x1, __bss_start
+  adr     x2, __bss_end
 
 bss_init_loop:
   str     xzr, [x1], 8
