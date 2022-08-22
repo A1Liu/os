@@ -63,6 +63,8 @@ export fn main() callconv(.C) noreturn {
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
 
+    std.log.info("bss value: {*}", .{&globals.padding[0]});
+
     std.log.info(
         \\
         \\-----------------------------------------

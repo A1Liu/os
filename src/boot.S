@@ -61,8 +61,8 @@ main_core_el1:
   mov     sp, x1
 
   # Clean the BSS section
-  ldr     x1, =__bss_start     // Start address
-  ldr     x2, =__bss_end       // End address
+  adr     x1, __bss_start     // Start address
+  adr     x2, __bss_end       // End address
 
 bss_init_loop:
   str     xzr, [x1], 8
