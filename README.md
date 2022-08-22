@@ -1,7 +1,7 @@
 # os
 
 - Architecture Target: 64-bit ARMv8, i.e. aarch64/arm64
-- Hardware Target: Pi 3 Model B
+- Hardware Target: Michelle's Pi 3 Model B
 - RAM: 1GB
 
 ## Build Dependencies
