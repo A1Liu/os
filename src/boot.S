@@ -58,7 +58,7 @@ drop_from_2:
 
 main_core_el1:
   # Set stack to start below our code
-  ldr     x1, =_start
+  adr     x1, _start
   mov     sp, x1
 
   # Clean the BSS section

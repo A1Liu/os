@@ -1,6 +1,9 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const c = @cImport({
+    @cInclude("shared_values.h");
+});
 pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
