@@ -16,6 +16,7 @@ pub const have_error_return_tracing = false;
 // page allocators
 // interrupt-based mini-uart handler
 // scheduler
+// syscalls - make everything either really fast or async
 
 pub fn log(
     comptime message_level: std.log.Level,
