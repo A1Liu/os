@@ -5,15 +5,16 @@ const mmio = os.mmio;
 
 pub const size = 1024 * 1024 * 1024;
 
-// PLAN:
-//
-// 1. Create mapping offline for 1GB, as array, at comptime
-// 2. store mapping in data section
-// 3. Write asm for setting mapping and then jumping to correct location
-// 4. Profit?
+// Creates a series of set bits. Useful when defining bit masks to use in
+// communication with hardware.
+fn ones(comptime count: u16) std.math.IntFittingRange(0, (1 << count) - 1) {
+    comptime {
+        const value: std.math.IntFittingRange(0, 1 << count) = 1 << count;
+        return value - 1;
+    }
+}
 
 // See D5-2726
-
 const upper_attr_mask: u64 = 0b1111111111111111 << 47;
 const reserved_mask: u64 = 0b1 << 11;
 const lower_attr_mask: u64 = 0b111111111 << 2;
@@ -25,9 +26,10 @@ const addr_mask: u64 = ~(upper_attr_mask | reserved_mask | lower_attr_mask | blo
 const access_bit: u64 = 0x1 << 10;
 
 // D4-2735
-// const rw_el1: u64 = 0b00 << 6;
-// const r_el1: u64 = 0b10 << 6;
+const rw_el1: u64 = 0b00 << 6;
+const r_el1: u64 = 0b10 << 6;
 
+export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast([4096]u8, pmd_initial);
 const pmd_initial = map: {
     @setEvalBranchQuota(2000);
 
@@ -65,12 +67,3 @@ const pmd_initial = map: {
 // too late.
 export var kernel_memory_map_pgd: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
-export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast([4096]u8, pmd_initial);
-
-// comptime {
-//     const skip = 2;
-//     for (pmd_initial) |slot, i| {
-//         if (i < skip) continue;
-//         @compileError(std.fmt.comptimePrint("{}: {x}", .{ i, slot }));
-//     }
-// }
