@@ -83,6 +83,13 @@ bss_init_loop:
   ldr     x0, =(MAIR_VALUE)
   msr     mair_el1, x0
 
+  ldr     x2, =start_kernel
+
+  # mov     x0, #SCTLR_MMU_ENABLED
+  # msr     sctlr_el1, x0
+
+  #br      x2
+
 
 start_kernel:
   # Jump to our kernel main, should be noreturn
