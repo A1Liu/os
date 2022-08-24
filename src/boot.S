@@ -58,8 +58,8 @@ drop_from_2:
 
 main_core_el1:
   # Clean the BSS section
-  # ADR is technically a real instruction that adds an immediate,
-  # but in this case, we defined __bss_start in the link as a label,
+  # ADR is technically a real instruction that adds an immediate to the program
+  # counter, but in this case, we defined __bss_start in the link as a label,
   # so the assembler interprets it as a pseudo-op, and does a
   # PC-relative computation to calculate the address of __bss_start
   adr     x1, __bss_start
@@ -71,10 +71,10 @@ bss_init_loop:
   blt     bss_init_loop
 
 
-  # Set stack to start below our code
-  # TODO: set to absolute-address-based
-  # ldr x1, =_start
-
+  # Set stack to start below our code; since we're not in virtual memory yet,
+  # our program counter is still in physical address space, so we need to do
+  # an absolute load; since that address isn't valid yet, we can't refer to `sp`
+  # until we start really using the MMU
   ldr     x1, =_start
   mov     sp, x1
 
