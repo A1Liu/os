@@ -33,13 +33,20 @@ const pmd_initial = map: {
 
     var pmd = [1]u64{0} ** 512;
 
-    const base = mmio.MMIO_BASE >> 21;
+    const mmio_base = mmio.MMIO_BASE >> 21;
     for (pmd) |*slot, i| {
         var descriptor: u64 = i << 21;
-        if (i < base) {
-            descriptor |= c.MMU_FLAGS;
+
+        descriptor |= valid_bit;
+
+        // This flag is managed by software and from what I understand it
+        // handles page faults, similar to the "present" bit in x64
+        descriptor |= access_bit;
+
+        if (i < mmio_base) {
+            descriptor |= c.MT_NORMAL_NC_FLAGS << 2;
         } else {
-            descriptor |= c.MMU_DEVICE_FLAGS;
+            descriptor |= c.MT_DEVICE_nGnRnE << 2;
         }
 
         slot.* = descriptor;
