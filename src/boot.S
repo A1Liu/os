@@ -57,10 +57,6 @@ drop_from_2:
   eret
 
 main_core_el1:
-  # Set stack to start below our code
-  adr     x1, _start
-  mov     sp, x1
-
   # Clean the BSS section
   # ADR is technically a real instruction that adds an immediate,
   # but in this case, we defined __bss_start in the link as a label,
@@ -74,7 +70,27 @@ bss_init_loop:
   cmp     x1, x2
   blt     bss_init_loop
 
+
+  # Set stack to start below our code
+  # TODO: set to absolute-address-based
+  # ldr x1, =_start
+
+  adr     x1, _start
+  mov     sp, x1
+
+  # Set up page tables; store entry pointing to pmd in pud[0]
+  adrp    x0, kernel_memory_map_pud
+  adrp    x1, kernel_memory_map_pmd
+  orr     x1, x1, MM_TYPE_PAGE_TABLE
+  str     x1, [x0]
+
+  # Set up page tables; store entry pointing to pud in pgd[0]
+  mov     x1, x0
   adrp    x0, kernel_memory_map_pgd
+  orr     x1, x1, MM_TYPE_PAGE_TABLE
+  str     x1, [x0]
+
+  # x0 still contains kernel_memory_map_pgd
   msr     ttbr1_el1, x0
 
   ldr     x0, =(TCR_VALUE)

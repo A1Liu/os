@@ -1,6 +1,7 @@
 const std = @import("std");
 const os = @import("root");
 const c = os.c;
+const mmio = os.mmio;
 
 pub const size = 1024 * 1024 * 1024;
 
@@ -24,8 +25,8 @@ const addr_mask: u64 = ~(upper_attr_mask | reserved_mask | lower_attr_mask | blo
 const access_bit: u64 = 0x1 << 10;
 
 // D4-2735
-const rw_el1: u64 = 0b00 << 6;
-const r_el1: u64 = 0b10 << 6;
+// const rw_el1: u64 = 0b00 << 6;
+// const r_el1: u64 = 0b10 << 6;
 
 const pmd_initial = map: {
     var pmd = [1]u64{0} ** (4096 / 8);
@@ -38,10 +39,19 @@ const pmd_initial = map: {
         descriptor |= access_bit;
 
         descriptor |= c.MT_NORMAL_NC_FLAGS << 2;
-        descriptor |= rw_el1 << 2;
 
         descriptor |= block_bit;
         descriptor |= valid_bit;
+
+        slot.* = descriptor;
+    }
+
+    const base = mmio.MMIO_BASE / (4096 << 9);
+    for (pmd[base..]) |*slot| {
+        var descriptor = slot.*;
+
+        descriptor &= addr_mask;
+        descriptor |= c.MMU_DEVICE_FLAGS;
 
         slot.* = descriptor;
     }

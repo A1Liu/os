@@ -7,7 +7,7 @@ pub const constants = struct {
     pub const TIMER_CS_M1: u32 = 1 << 1;
 };
 
-const MMIO_BASE: u32 = 0x3F000000;
+pub const MMIO_BASE: u32 = 0x3F000000;
 const GPIO_BASE = MMIO_BASE + 0x200000;
 const AUX_BASE = (GPIO_BASE + 0x15000);
 
