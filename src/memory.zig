@@ -29,29 +29,18 @@ const access_bit: u64 = 0x1 << 10;
 // const r_el1: u64 = 0b10 << 6;
 
 const pmd_initial = map: {
-    var pmd = [1]u64{0} ** (4096 / 8);
+    @setEvalBranchQuota(2000);
 
+    var pmd = [1]u64{0} ** 512;
+
+    const base = mmio.MMIO_BASE >> 21;
     for (pmd) |*slot, i| {
         var descriptor: u64 = i << 21;
-
-        // This flag is managed by software and from what I understand it
-        // handles page faults, similar to the "present" bit in x64
-        descriptor |= access_bit;
-
-        descriptor |= c.MT_NORMAL_NC_FLAGS << 2;
-
-        descriptor |= block_bit;
-        descriptor |= valid_bit;
-
-        slot.* = descriptor;
-    }
-
-    const base = mmio.MMIO_BASE / (4096 << 9);
-    for (pmd[base..]) |*slot| {
-        var descriptor = slot.*;
-
-        descriptor &= addr_mask;
-        descriptor |= c.MMU_DEVICE_FLAGS;
+        if (i < base) {
+            descriptor |= c.MMU_FLAGS;
+        } else {
+            descriptor |= c.MMU_DEVICE_FLAGS;
+        }
 
         slot.* = descriptor;
     }
@@ -67,8 +56,8 @@ const pmd_initial = map: {
 // They need to be initialized at runtime because we can't know the final address
 // of these objects in the binary until we get to the linker, where it's already
 // too late.
-export var kernel_memory_map_pgd: [4096]u8 align(4096) = undefined;
-export var kernel_memory_map_pud: [4096]u8 align(4096) = undefined;
+export var kernel_memory_map_pgd: [4096]u8 align(4096) = [1]u8{0} ** 4096;
+export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast([4096]u8, pmd_initial);
 
 // comptime {
