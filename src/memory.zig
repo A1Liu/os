@@ -18,6 +18,7 @@ const reserved_mask: u64 = 0b1 << 11;
 const lower_attr_mask: u64 = 0b111111111 << 2;
 const block_bit: u64 = 0b1 << 1;
 const valid_bit: u64 = 0b1 << 0;
+
 const addr_mask: u64 = ~(upper_attr_mask | reserved_mask | lower_attr_mask | block_bit | valid_bit);
 
 const access_bit: u64 = 0x1 << 10;
@@ -30,7 +31,7 @@ const pmd_initial = map: {
     var pmd = [1]u64{0} ** (4096 / 8);
 
     for (pmd) |*slot, i| {
-        var descriptor: u64 = i << 12;
+        var descriptor: u64 = i << 21;
 
         // This flag is managed by software and from what I understand it
         // handles page faults, similar to the "present" bit in x64

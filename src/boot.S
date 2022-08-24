@@ -19,40 +19,40 @@ proc_hang:
 # QEMU starts at EL2, but the Raspberry Pi 3b starts
 # at EL3, we need to do some silly shit here.
 main_core:
-  ldr   x0, =SCTLR_VALUE_MMU_DISABLED
-  msr   sctlr_el1, x0
+  ldr     x0, =SCTLR_VALUE_MMU_DISABLED
+  msr     sctlr_el1, x0
 
-  ldr   x0, =CPACR_VALUE
-  msr   cpacr_el1, x0
+  ldr     x0, =CPACR_VALUE
+  msr     cpacr_el1, x0
 
-  mrs x0, CurrentEL
-  lsr x0, x0, 2
-  cmp x0, 3
-  bne check_drop_from_2
+  mrs     x0, CurrentEL
+  lsr     x0, x0, 2
+  cmp     x0, 3
+  bne     check_drop_from_2
 
-  ldr   x0, =SCR_VALUE
-  msr   scr_el3, x0
+  ldr     x0, =SCR_VALUE
+  msr     scr_el3, x0
 
-  ldr   x0, =SPSR_VALUE
-  msr   spsr_el3, x0
+  ldr     x0, =SPSR_VALUE
+  msr     spsr_el3, x0
 
-  adr   x0, main_core_el1
-  msr   elr_el3, x0
-  b drop_from_2
+  adr     x0, main_core_el1
+  msr     elr_el3, x0
+  b       drop_from_2
 
 check_drop_from_2:
-  cmp x0, 2
-  bne proc_hang
+  cmp     x0, 2
+  bne     proc_hang
 
-  ldr   x0, =SPSR_VALUE
-  msr   spsr_el2, x0
+  ldr     x0, =SPSR_VALUE
+  msr     spsr_el2, x0
 
-  adr   x0, main_core_el1
-  msr   elr_el2, x0
+  adr     x0, main_core_el1
+  msr     elr_el2, x0
 
 drop_from_2:
-  ldr   x0, =HCR_VALUE
-  msr   hcr_el2, x0
+  ldr     x0, =HCR_VALUE
+  msr     hcr_el2, x0
 
   eret
 
@@ -73,6 +73,16 @@ bss_init_loop:
   str     xzr, [x1], 8
   cmp     x1, x2
   blt     bss_init_loop
+
+  adrp    x0, kernel_memory_map_pgd
+  msr     ttbr1_el1, x0
+
+  ldr     x0, =(TCR_VALUE)
+  msr     tcr_el1, x0
+
+  ldr     x0, =(MAIR_VALUE)
+  msr     mair_el1, x0
+
 
 start_kernel:
   # Jump to our kernel main, should be noreturn

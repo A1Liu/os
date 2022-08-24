@@ -8,22 +8,26 @@ SECTIONS {
     *(.text.*)
   }
 
+  /* Align to page */
+  . = ALIGN(0x1000);
+
   .rodata : {
     *(.rodata .rodata.*)
   }
+
+  . = ALIGN(0x1000);
 
   .data : {
     *(.data)
   }
 
+  . = ALIGN(0x8);
+
+  __bss_start = .;
   .bss : {
-    . = ALIGN(16);
-    __bss_start = .;
     *(COMMON)
     *(.bss)
     *(.bss*)
-    __bss_end = .;
   }
-
-  _end = .;
+  __bss_end = .;
 }
