@@ -78,9 +78,15 @@ bss_init_loop:
   ldr     x1, =_start
   mov     sp, x1
 
+  # Set up page tables; store entry pointing to pte in pmd[0]
+  adrp    x0, kernel_memory_map_pmd
+  adrp    x1, kernel_memory_map_pte
+  orr     x1, x1, MM_TYPE_PAGE_TABLE
+  str     x1, [x0]
+
   # Set up page tables; store entry pointing to pmd in pud[0]
+  mov     x1, x0
   adrp    x0, kernel_memory_map_pud
-  adrp    x1, kernel_memory_map_pmd
   orr     x1, x1, MM_TYPE_PAGE_TABLE
   str     x1, [x0]
 

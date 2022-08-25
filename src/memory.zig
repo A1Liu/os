@@ -69,8 +69,6 @@ const pte_initial = map: {
         const mair_bits = c.MT_NORMAL_NC_FLAGS;
         descriptor |= mair_bits << 2;
 
-        descriptor |= mmu_bits.r_el1;
-
         slot.* = descriptor;
     }
 
