@@ -9,8 +9,7 @@ pub const size = 1024 * 1024 * 1024;
 // communication with hardware.
 fn ones(comptime count: u16) std.math.IntFittingRange(0, (1 << count) - 1) {
     comptime {
-        const value: std.math.IntFittingRange(0, 1 << count) = 1 << count;
-        return value - 1;
+        return (1 << count) - 1;
     }
 }
 
