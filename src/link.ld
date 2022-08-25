@@ -16,7 +16,9 @@ SECTIONS {
     *(.rodata .rodata.*)
   }
 
+  /* Align to page, so that we can have a different set of access permissions */
   . = ALIGN(0x1000);
+  __data_start = .;
 
   .data : {
     *(.data)
