@@ -25,6 +25,11 @@ main_core:
   ldr     x0, =CPACR_VALUE
   msr     cpacr_el1, x0
 
+  # Use an instruction barrier here to wait until
+  # the CPACR write finishes
+  # https://developer.arm.com/documentation/100941/0101/Barriers
+  isb
+
   mrs     x0, CurrentEL
   lsr     x0, x0, 2
   cmp     x0, 3

@@ -11,6 +11,7 @@ SECTIONS {
 
   /* Align to page */
   . = ALIGN(0x1000);
+  __rodata_start = .;
 
   .rodata : {
     *(.rodata .rodata.*)

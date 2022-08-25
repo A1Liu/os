@@ -85,3 +85,38 @@ const pte_initial = map: {
 // too late.
 export var kernel_memory_map_pgd: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
+
+extern var _start: u8;
+extern var __rodata_start: u8;
+extern var __data_start: u8;
+pub fn initProtections() void {
+    const exe_begin = @ptrToInt(&_start);
+    // const exe_end = @ptrToInt(&__rodata_start);
+    const ro_end = @ptrToInt(&__data_start);
+
+    const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
+    var i = exe_begin;
+    while (i < ro_end) : (i += 4096) {
+        const index = (i >> 12) & 511;
+        var descriptor: u64 = index << 12;
+
+        descriptor |= mmu_bits.valid;
+        descriptor |= mmu_bits.pte;
+
+        descriptor |= mmu_bits.access;
+
+        const mair_bits = c.MT_NORMAL_NC_FLAGS;
+        descriptor |= mair_bits << 2;
+
+        // Prevent writing to the code or to read-only data
+        descriptor |= mmu_bits.r_el1;
+
+        pte[index] = descriptor;
+    }
+
+    asm volatile (
+        \\tlbi vmalle1is
+        \\DSB ISH
+        \\isb
+    );
+}

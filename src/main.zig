@@ -55,6 +55,7 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
 export fn main() callconv(.C) noreturn {
     mmio.init();
+    memory.initProtections();
     interrupts.init();
 
     _ = memory;
