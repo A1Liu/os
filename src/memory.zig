@@ -14,20 +14,16 @@ fn ones(comptime count: u16) std.math.IntFittingRange(0, (1 << count) - 1) {
     }
 }
 
-// See D5-2726
-const upper_attr_mask: u64 = 0b1111111111111111 << 47;
-const reserved_mask: u64 = 0b1 << 11;
-const lower_attr_mask: u64 = 0b111111111 << 2;
-const block_bit: u64 = 0b1 << 1;
-const valid_bit: u64 = 0b1 << 0;
+const mmu_bits = struct {
+    // See D5-2726
+    const block: u64 = 0b1 << 1;
+    const valid: u64 = 0b1 << 0;
+    const access: u64 = 0x1 << 10;
 
-const addr_mask: u64 = ~(upper_attr_mask | reserved_mask | lower_attr_mask | block_bit | valid_bit);
-
-const access_bit: u64 = 0x1 << 10;
-
-// D4-2735
-const rw_el1: u64 = 0b00 << 6;
-const r_el1: u64 = 0b10 << 6;
+    // D4-2735
+    const rw_el1: u64 = 0b00 << 6;
+    const r_el1: u64 = 0b10 << 6;
+};
 
 export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast([4096]u8, pmd_initial);
 const pmd_initial = map: {
@@ -39,17 +35,14 @@ const pmd_initial = map: {
     for (pmd) |*slot, i| {
         var descriptor: u64 = i << 21;
 
-        descriptor |= valid_bit;
+        descriptor |= mmu_bits.valid;
 
         // This flag is managed by software and from what I understand it
         // handles page faults, similar to the "present" bit in x64
-        descriptor |= access_bit;
+        descriptor |= mmu_bits.access;
 
-        if (i < mmio_base) {
-            descriptor |= c.MT_NORMAL_NC_FLAGS << 2;
-        } else {
-            descriptor |= c.MT_DEVICE_nGnRnE << 2;
-        }
+        const mair_bits = if (i < mmio_base) c.MT_NORMAL_NC_FLAGS else c.MT_DEVICE_nGnRnE;
+        descriptor |= mair_bits << 2;
 
         slot.* = descriptor;
     }
