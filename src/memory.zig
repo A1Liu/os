@@ -16,6 +16,7 @@ fn ones(comptime count: u16) std.math.IntFittingRange(0, (1 << count) - 1) {
 const mmu_bits = struct {
     // See D5-2726
     const block: u64 = 0b1 << 1;
+    const pte: u64 = 0b1 << 1;
     const valid: u64 = 0b1 << 0;
     const access: u64 = 0x1 << 10;
 
@@ -47,6 +48,33 @@ const pmd_initial = map: {
     }
 
     break :map pmd;
+};
+
+export var kernel_memory_map_pte: [4096]u8 align(4096) = @bitCast([4096]u8, pte_initial);
+const pte_initial = map: {
+    @setEvalBranchQuota(2000);
+
+    var pte = [1]u64{0} ** 512;
+
+    for (pte) |*slot, i| {
+        var descriptor: u64 = i << 12;
+
+        descriptor |= mmu_bits.valid;
+        descriptor |= mmu_bits.pte;
+
+        // This flag is managed by software and from what I understand it
+        // handles page faults, similar to the "present" bit in x64
+        descriptor |= mmu_bits.access;
+
+        const mair_bits = c.MT_NORMAL_NC_FLAGS;
+        descriptor |= mair_bits << 2;
+
+        descriptor |= mmu_bits.r_el1;
+
+        slot.* = descriptor;
+    }
+
+    break :map pte;
 };
 
 // These will go into bss and get initialized at runtime to all zeros;
