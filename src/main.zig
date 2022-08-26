@@ -32,8 +32,7 @@ pub fn log(
 
     var buf: [256]u8 = undefined;
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
-        mmio.uartWrite("Log failed, message too long\n");
-        return;
+        panic("Log failed, message too long", null);
     };
 
     mmio.uartWrite(output);

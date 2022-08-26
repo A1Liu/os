@@ -58,8 +58,7 @@ const pmd_initial = map: {
     break :map pmd;
 };
 
-export var kernel_memory_map_pte: [4096]u8 align(4096) = @bitCast([4096]u8, pte_initial);
-const pte_initial = map: {
+export var kernel_memory_map_pte: [4096]u8 align(4096) = map: {
     @setEvalBranchQuota(2000);
 
     var pte = [1]u64{0} ** 512;
@@ -87,7 +86,7 @@ const pte_initial = map: {
         slot.* = descriptor;
     }
 
-    break :map pte;
+    break :map @bitCast([4096]u8, pte);
 };
 
 // These will go into bss and get initialized at runtime to all zeros;
