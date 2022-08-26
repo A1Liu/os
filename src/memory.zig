@@ -19,6 +19,8 @@ const mmu_bits = struct {
     const pte: u64 = 0b1 << 1;
     const valid: u64 = 0b1 << 0;
     const access: u64 = 0x1 << 10;
+    const nx: u64 = 0x1 << 54;
+    const px: u64 = 0x1 << 53;
 
     // D4-2735
     const rw_el1: u64 = 0b00 << 6;
@@ -40,6 +42,9 @@ const pmd_initial = map: {
         // This flag is managed by software and from what I understand it
         // handles page faults, similar to the "present" bit in x64
         descriptor |= mmu_bits.access;
+
+        descriptor |= mmu_bits.nx;
+        descriptor |= mmu_bits.px;
 
         const mair_bits = if (i < mmio_base) c.MT_NORMAL_NC_FLAGS else c.MT_DEVICE_nGnRnE;
         descriptor |= mair_bits << 2;
@@ -69,6 +74,12 @@ const pte_initial = map: {
         const mair_bits = c.MT_NORMAL_NC_FLAGS;
         descriptor |= mair_bits << 2;
 
+        // The stack starts at 0x80000 and should not be executable
+        if (i < 128) {
+            descriptor |= mmu_bits.nx;
+            descriptor |= mmu_bits.px;
+        }
+
         slot.* = descriptor;
     }
 
@@ -91,7 +102,7 @@ extern var __rodata_start: u8;
 extern var __data_start: u8;
 pub fn initProtections() void {
     const exe_begin = @ptrToInt(&_start);
-    // const exe_end = @ptrToInt(&__rodata_start);
+    const exe_end = @ptrToInt(&__rodata_start);
     const ro_end = @ptrToInt(&__data_start);
 
     const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
@@ -110,6 +121,12 @@ pub fn initProtections() void {
 
         // Prevent writing to the code or to read-only data
         descriptor |= mmu_bits.r_el1;
+
+        descriptor |= mmu_bits.nx;
+        if (i >= exe_end) {
+            descriptor |= mmu_bits.nx;
+            descriptor |= mmu_bits.px;
+        }
 
         pte[index] = descriptor;
     }
