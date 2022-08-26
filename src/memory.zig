@@ -34,6 +34,9 @@ const pmd_initial = map: {
     var pmd = [1]u64{0} ** 512;
 
     const mmio_base = mmio.MMIO_BASE >> 21;
+
+    // Entry 0 of this map gets overwritten at boot-time, but that is
+    // not important to the logic here.
     for (pmd) |*slot, i| {
         var descriptor: u64 = i << 21;
 
@@ -74,9 +77,10 @@ const pte_initial = map: {
         const mair_bits = c.MT_NORMAL_NC_FLAGS;
         descriptor |= mair_bits << 2;
 
+        descriptor |= mmu_bits.nx;
+
         // The stack starts at 0x80000 and should not be executable
         if (i < 128) {
-            descriptor |= mmu_bits.nx;
             descriptor |= mmu_bits.px;
         }
 
@@ -109,22 +113,12 @@ pub fn initProtections() void {
     var i = exe_begin;
     while (i < ro_end) : (i += 4096) {
         const index = (i >> 12) & 511;
-        var descriptor: u64 = index << 12;
-
-        descriptor |= mmu_bits.valid;
-        descriptor |= mmu_bits.pte;
-
-        descriptor |= mmu_bits.access;
-
-        const mair_bits = c.MT_NORMAL_NC_FLAGS;
-        descriptor |= mair_bits << 2;
+        var descriptor: u64 = pte[index];
 
         // Prevent writing to the code or to read-only data
         descriptor |= mmu_bits.r_el1;
 
-        descriptor |= mmu_bits.nx;
         if (i >= exe_end) {
-            descriptor |= mmu_bits.nx;
             descriptor |= mmu_bits.px;
         }
 
