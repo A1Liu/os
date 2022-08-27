@@ -1,7 +1,6 @@
 ENTRY(_start)
 
 SECTIONS {
-  /* . = 0x0000000000080000;     /* Kernel load address for AArch64 */
   . =    0xffff000000080000;     /* Kernel load address for AArch64 */
 
   .text : {
