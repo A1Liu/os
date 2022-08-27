@@ -9,6 +9,7 @@ pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
 pub const globals = @import("./globals.zig").globals;
+pub const datastruct = @import("./datastruct.zig");
 
 pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;

@@ -3,7 +3,22 @@ const os = @import("root");
 const c = os.c;
 const mmio = os.mmio;
 
-pub const size = 1024 * 1024 * 1024;
+const BitSet = os.datastruct.BitSet;
+
+extern var _start: u8;
+extern var __rodata_start: u8;
+extern var __data_start: u8;
+extern var __bss_end: u8;
+
+const virtual_base: u64 = 0xffff000000000000;
+inline fn physicalAddress(ptr: anytype) u64 {
+    const a = @ptrToInt(ptr);
+    return a - virtual_base;
+}
+
+inline fn kernelPtr(comptime T: type, address: u64) T {
+    return @intToPtr(T, address - virtual_base);
+}
 
 // Creates a series of set bits. Useful when defining bit masks to use in
 // communication with hardware.
@@ -97,10 +112,6 @@ export var kernel_memory_map_pte: [4096]u8 align(4096) = map: {
 export var kernel_memory_map_pgd: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 
-extern var _start: u8;
-extern var __rodata_start: u8;
-extern var __data_start: u8;
-
 fn addressPteBits(ptr: anytype) usize {
     return (@ptrToInt(ptr) >> 12) & 511;
 }
@@ -130,3 +141,23 @@ pub fn initProtections() void {
         \\isb
     );
 }
+
+const class_count = 12;
+const FreeBlock = struct {
+    next: *@This(),
+    prev: *@This(),
+    class: i64,
+};
+
+const ClassInfo = struct {
+    freelist: *FreeBlock,
+    buddes: BitSet,
+};
+
+// NOTE: The smallest size class is 4kb.
+var free_memory: u64 = undefined;
+var classes = [class_count]ClassInfo;
+
+// Note: these are only ever used for safety
+var usable_pages: BitSet = undefined;
+var free_pages: BitSet = undefined;
