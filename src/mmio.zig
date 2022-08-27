@@ -7,11 +7,11 @@ pub const constants = struct {
     pub const TIMER_CS_M1: u32 = 1 << 1;
 };
 
-pub const MMIO_BASE: u32 = 0x3F000000;
+pub const MMIO_BASE: u64 = 0xFFFF00003F000000;
 const GPIO_BASE = MMIO_BASE + 0x200000;
 const AUX_BASE = (GPIO_BASE + 0x15000);
 
-const MmioRegister = enum(u32) {
+const MmioRegister = enum(u64) {
     IRQ_BASIC_PENDING = MMIO_BASE + 0x0000B200,
     IRQ_PENDING_1 = MMIO_BASE + 0x0000B204,
     IRQ_PENDING_2 = MMIO_BASE + 0x0000B208,
