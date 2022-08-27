@@ -18,9 +18,14 @@ const mmu_bits = struct {
     const block: u64 = 0b1 << 1;
     const pte: u64 = 0b1 << 1;
     const valid: u64 = 0b1 << 0;
+
+    // This flag is managed by software and from what I understand it
+    // handles page faults, similar to the "present" bit in x64
     const access: u64 = 0x1 << 10;
-    const nx: u64 = 0x1 << 54;
-    const px: u64 = 0x1 << 53;
+
+    // Executable permission bits
+    const nx: u64 = 0x1 << 54; // disable execution for non-priveleged
+    const px: u64 = 0x1 << 53; // disable execution for priveleged
 
     // D4-2735
     const rw_el1: u64 = 0b00 << 6;
@@ -41,11 +46,7 @@ const pmd_initial = map: {
         var descriptor: u64 = i << 21;
 
         descriptor |= mmu_bits.valid;
-
-        // This flag is managed by software and from what I understand it
-        // handles page faults, similar to the "present" bit in x64
         descriptor |= mmu_bits.access;
-
         descriptor |= mmu_bits.nx;
         descriptor |= mmu_bits.px;
 
@@ -63,19 +64,15 @@ export var kernel_memory_map_pte: [4096]u8 align(4096) = map: {
 
     var pte = [1]u64{0} ** 512;
 
+    const mair_bits = c.MT_NORMAL_NC_FLAGS << 2;
+
     for (pte) |*slot, i| {
         var descriptor: u64 = i << 12;
 
         descriptor |= mmu_bits.valid;
         descriptor |= mmu_bits.pte;
-
-        // This flag is managed by software and from what I understand it
-        // handles page faults, similar to the "present" bit in x64
         descriptor |= mmu_bits.access;
-
-        const mair_bits = c.MT_NORMAL_NC_FLAGS;
-        descriptor |= mair_bits << 2;
-
+        descriptor |= mair_bits;
         descriptor |= mmu_bits.nx;
 
         // The stack starts at 0x80000 and should not be executable
@@ -103,25 +100,28 @@ export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 extern var _start: u8;
 extern var __rodata_start: u8;
 extern var __data_start: u8;
+
+fn addressPteBits(ptr: anytype) usize {
+    return (@ptrToInt(ptr) >> 12) & 511;
+}
+
 pub fn initProtections() void {
-    const exe_begin = @ptrToInt(&_start);
-    const exe_end = @ptrToInt(&__rodata_start);
-    const ro_end = @ptrToInt(&__data_start);
+    const exe_begin = addressPteBits(&_start);
+    const exe_end = addressPteBits(&__rodata_start);
+    const ro_end = addressPteBits(&__data_start);
 
     const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
-    var i = exe_begin;
-    while (i < ro_end) : (i += 4096) {
-        const index = (i >> 12) & 511;
-        var descriptor: u64 = pte[index];
 
-        // Prevent writing to the code or to read-only data
-        descriptor |= mmu_bits.r_el1;
+    for (pte[exe_begin..exe_end]) |*slot| {
+        slot.* |= mmu_bits.r_el1;
+    }
 
-        if (i >= exe_end) {
-            descriptor |= mmu_bits.px;
-        }
+    for (pte[exe_end..ro_end]) |*slot| {
+        slot.* |= mmu_bits.r_el1 | mmu_bits.px;
+    }
 
-        pte[index] = descriptor;
+    for (pte[ro_end..]) |*slot| {
+        slot.* |= mmu_bits.px;
     }
 
     asm volatile (
