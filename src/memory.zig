@@ -167,6 +167,9 @@ var usable_pages: BitSet = undefined;
 var free_pages: BitSet = undefined;
 
 // NOTE: The smallest size class is 4kb.
+//
+// Also: right now, the buddy bitset has no meaning for the largest size class,
+// since it has no buddy; we may want to change that later
 var classes: [class_count]ClassInfo = undefined;
 
 pub fn initAllocator() void {
