@@ -172,8 +172,12 @@ var free_pages: BitSet = undefined;
 // since it has no buddy; we may want to change that later
 var classes: [class_count]ClassInfo = undefined;
 
+// TODO: add a bigger-arena freelist, for allocations that go beyond the max
+// class size?
+
 pub fn initAllocator() void {
     // os.memory_size
+    // TODO: add everything from __bss_end to device begin to the allocator
 }
 
 fn buddyInfo(page: u64, class: u6) BuddyInfo {
