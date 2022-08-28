@@ -11,16 +11,6 @@ extern var __rodata_start: u8;
 extern var __data_start: u8;
 extern var __bss_end: u8;
 
-const virtual_base: u64 = 0xffff000000000000;
-inline fn physicalAddress(ptr: anytype) u64 {
-    const a = @ptrToInt(ptr);
-    return a - virtual_base;
-}
-
-inline fn kernelPtr(comptime T: type, address: u64) *T {
-    return @intToPtr(*T, address + virtual_base);
-}
-
 // Creates a series of set bits. Useful when defining bit masks to use in
 // communication with hardware.
 fn ones(comptime count: u16) std.math.IntFittingRange(0, (1 << count) - 1) {
@@ -125,17 +115,14 @@ pub fn initProtections() void {
     const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
 
     for (pte[exe_begin..exe_end]) |*slot| {
-        _ = slot;
         slot.* |= mmu_bits.r_el1;
     }
 
     for (pte[exe_end..ro_end]) |*slot| {
-        _ = slot;
         slot.* |= mmu_bits.r_el1 | mmu_bits.px;
     }
 
     for (pte[ro_end..]) |*slot| {
-        _ = slot;
         slot.* |= mmu_bits.px;
     }
 
@@ -144,6 +131,25 @@ pub fn initProtections() void {
         \\DSB ISH
         \\isb
     );
+}
+
+// ----------------------------------------------------------------------------
+//
+//                          Global Memory Allocator
+//
+// ----------------------------------------------------------------------------
+//
+// This section implements a global memory allocator using the Buddy Allocator
+// algorithm.
+
+const virtual_base: u64 = 0xffff000000000000;
+inline fn physicalAddress(ptr: anytype) u64 {
+    const a = @ptrToInt(ptr);
+    return a - virtual_base;
+}
+
+inline fn kernelPtr(comptime T: type, address: u64) *T {
+    return @intToPtr(*T, address + virtual_base);
 }
 
 const class_count = 12;
@@ -188,6 +194,7 @@ var class8 = [1]u64{0} ** (buddyInfo(buddy_end_page, 8).bitset_index / 64);
 var class9 = [1]u64{0} ** (buddyInfo(buddy_end_page, 9).bitset_index / 64);
 var class10 = [1]u64{0} ** (buddyInfo(buddy_end_page, 10).bitset_index / 64);
 
+// This initial value is valid for an initial set-up where all memory is used.
 var classes = classes: {
     var classes_value: [class_count]ClassInfo = undefined;
 
@@ -243,8 +250,9 @@ var classes = classes: {
 // class size?
 
 pub fn initAllocator() void {
-    // os.memory_size
-    // TODO: add everything from __bss_end to device begin to the allocator
+    // The `classes` object starts in a valid state, whose meaning is "all data
+    // is allocated." This means we can safely just release the pages that
+    // are usable.
     const begin = @ptrCast([*]align(4096) u8, @alignCast(4096, &__bss_end));
     const end = mmio.MMIO_BASE;
     const page_count = (end - @ptrToInt(begin)) / 4096;
