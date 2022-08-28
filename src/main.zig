@@ -93,6 +93,7 @@ export fn main() callconv(.C) noreturn {
         \\          Entering busy loop
         \\
         \\-----------------------------------------
+        \\
     , .{});
 
     var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
