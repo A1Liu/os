@@ -31,6 +31,7 @@
 - Aarch64 Calling Convention - https://hev.cc/3052.html
 - Aarch64 barriers - https://developer.arm.com/documentation/100941/0101/Barriers
 - Aarch64 shareability - https://developer.arm.com/documentation/den0024/a/Memory-Ordering/Memory-attributes/Cacheable-and-shareable-memory-attributes
+- Aarch64 Address Translation Stage (different from levels) - https://developer.arm.com/documentation/102142/0100/Stage-2-translation
 - Buddy allocator example code - https://github.com/a2liu/dumboss/blob/main/kern/memory.c
 - Pi General - https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
 - Pi 4 - https://www.rpi4os.com/
