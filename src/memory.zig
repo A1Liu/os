@@ -256,7 +256,9 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
         head.prev = null;
     }
 
-    const buf = @ptrCast([*]align(4096) u8, freelist)[0..(count * 4096)];
+    const size = count * 4096;
+    const buf = @ptrCast([*]align(4096) u8, freelist)[0..size];
+    free_memory -= size;
 
     const addr = physicalAddress(buf.ptr);
     const begin = addr / 4096;
@@ -322,7 +324,7 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
             const buds = buddyInfo(page, @truncate(u6, class));
 
             const buddy_is_free = info.buddies.isSet(buds.bitset_index);
-            info.buddies.setValue(buds.bitset_index, buddy_is_free);
+            info.buddies.setValue(buds.bitset_index, !buddy_is_free);
 
             if (!buddy_is_free) {
                 addToFreelist(page, class);
