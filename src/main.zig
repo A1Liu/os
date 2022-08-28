@@ -70,9 +70,9 @@ export fn main() callconv(.C) noreturn {
     std.debug.assert(page.ptr == page2.ptr);
     std.debug.assert(page.len == page2.len);
 
-    const page3 = memory.allocPages(30, false) catch unreachable;
+    const page3 = memory.allocPages(20, false) catch unreachable;
     std.debug.assert(page3.ptr != page2.ptr);
-    std.debug.assert(page3.len == page2.len);
+    std.debug.assert(page3.len != page2.len);
 
     std.log.info("{*}", .{page.ptr});
 

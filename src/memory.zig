@@ -313,7 +313,7 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
             break :found_class Result{
                 .count = requested_count,
                 .freelist = free,
-                .class = @truncate(u6, i),
+                .class = @intCast(u6, i + min_class),
             };
         }
 
@@ -353,6 +353,7 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
     const addr = physicalAddress(buf.ptr);
     const begin = addr / 4096;
     const end = begin + count;
+    _ = end;
 
     // TODO: safety checks
     // assert(all are usable);
@@ -389,9 +390,6 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
         if (remaining == child_size) break;
     }
 
-    _ = end;
-    _ = class;
-
     std.log.info("allocated {*}..{*}", .{ buf.ptr, buf.ptr + buf.len });
     return buf;
 }
@@ -399,8 +397,6 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
 pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
     const addr = physicalAddress(data);
     // assert(addr == align_down(addr, _4KB));
-
-    // std.log.info("{x}", .{addr});
 
     const begin = addr / 4096;
     const end = begin + count;
@@ -412,8 +408,6 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
     page: while (free_page < end) : (free_page += 1) {
         // TODO should probably do some math here to not have to iterate over every
         // page in data
-
-        // std.log.info("{x}", .{free_page});
 
         var page = free_page;
         for (classes[0..(class_count - 1)]) |*info, class| {
