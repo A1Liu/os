@@ -92,7 +92,8 @@ export fn main() callconv(.C) noreturn {
         }
 
         if (timer_value == 0) {
-            _ = memory.allocPages(0, true) catch unreachable;
+            const a = memory.allocPages(0, true) catch unreachable;
+            _ = memory.releasePages(a.ptr, 0);
         }
     }
 }

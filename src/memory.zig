@@ -195,6 +195,21 @@ fn addToFreelist(page: u64, class: u64) void {
     info.freelist = block;
 }
 
+fn removeFromFreelist(page: u64, class: u64) void {
+    // assert(class < CLASS_COUNT);
+    // assert(is_aligned(page, 1 << class));
+
+    const block = kernelPtr(FreeBlock, page * 4096);
+    const info = &classes[class];
+
+    if (block.next) |next| next.prev = block.prev;
+    if (block.prev) |prev| prev.next = block.next else {
+        assert(info.freelist == block);
+
+        info.freelist = block.next;
+    }
+}
+
 pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]align(4096) u8 {
     if (requested_count == 0) return &[0]u8{};
 
@@ -286,4 +301,41 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
     _ = class;
 
     return buf;
+}
+
+pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
+    const addr = physicalAddress(data);
+    // assert(addr == align_down(addr, _4KB));
+
+    const begin = addr / 4096;
+    const end = begin + count;
+
+    // assert(BitSet__get_all(MemGlobals.usable_pages, begin, end));
+    // assert(!BitSet__get_any(MemGlobals.free_pages, begin, end));
+
+    var page = begin;
+    page: while (page < end) : (page += 1) {
+        // TODO should probably do some math here to not have to iterate over every
+        // page in data
+        for (classes[0..(class_count - 1)]) |*info, class| {
+            // assert(is_aligned(page, 1 << class));
+            const buds = buddyInfo(page, @truncate(u6, class));
+
+            const buddy_is_free = info.buddies.isSet(buds.bitset_index);
+            info.buddies.setValue(buds.bitset_index, buddy_is_free);
+
+            if (!buddy_is_free) {
+                addToFreelist(page, class);
+                continue :page;
+            }
+
+            removeFromFreelist(buds.buddy, class);
+            page = std.math.min(page, buds.buddy);
+        }
+
+        // assert(is_aligned(page, 1 << (CLASS_COUNT - 1)));
+        addToFreelist(page, class_count - 1);
+    }
+    _ = end;
+    _ = count;
 }
