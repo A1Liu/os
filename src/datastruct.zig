@@ -29,7 +29,7 @@ pub const BitSet = struct {
     pub fn initRaw(arena: []MaskInt, bit_length: usize) @This() {
         const arena_bit_length = arena.len * @bitSizeOf(MaskInt);
         assert(bit_length <= arena_bit_length);
-        assert(bit_length > arena_bit_length - @bitSizeOf(MaskInt));
+        assert(arena_bit_length == 0 or bit_length > arena_bit_length - @bitSizeOf(MaskInt));
 
         return .{
             .bit_length = bit_length,

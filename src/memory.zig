@@ -198,48 +198,21 @@ var class10 = [1]u64{0} ** (buddyInfo(buddy_end_page, 10).bitset_index / 64);
 var classes = classes: {
     var classes_value: [class_count]ClassInfo = undefined;
 
-    classes_value[0] = .{
-        .buddies = BitSet.initRaw(&class0, buddyInfo(buddy_end_page, 0).bitset_index),
-        .freelist = null,
+    const class_arrays = [_][]u64{
+        &class0, &class1, &class2,  &class3,
+        &class4, &class5, &class6,  &class7,
+        &class8, &class9, &class10,
     };
-    classes_value[1] = .{
-        .buddies = BitSet.initRaw(&class1, buddyInfo(buddy_end_page, 1).bitset_index),
-        .freelist = null,
-    };
-    classes_value[2] = .{
-        .buddies = BitSet.initRaw(&class2, buddyInfo(buddy_end_page, 2).bitset_index),
-        .freelist = null,
-    };
-    classes_value[3] = .{
-        .buddies = BitSet.initRaw(&class3, buddyInfo(buddy_end_page, 3).bitset_index),
-        .freelist = null,
-    };
-    classes_value[4] = .{
-        .buddies = BitSet.initRaw(&class4, buddyInfo(buddy_end_page, 4).bitset_index),
-        .freelist = null,
-    };
-    classes_value[5] = .{
-        .buddies = BitSet.initRaw(&class5, buddyInfo(buddy_end_page, 5).bitset_index),
-        .freelist = null,
-    };
-    classes_value[6] = .{
-        .buddies = BitSet.initRaw(&class6, buddyInfo(buddy_end_page, 6).bitset_index),
-        .freelist = null,
-    };
-    classes_value[7] = .{
-        .buddies = BitSet.initRaw(&class7, buddyInfo(buddy_end_page, 7).bitset_index),
-        .freelist = null,
-    };
-    classes_value[8] = .{
-        .buddies = BitSet.initRaw(&class8, buddyInfo(buddy_end_page, 8).bitset_index),
-        .freelist = null,
-    };
-    classes_value[9] = .{
-        .buddies = BitSet.initRaw(&class9, buddyInfo(buddy_end_page, 9).bitset_index),
-        .freelist = null,
-    };
-    classes_value[10] = .{
-        .buddies = BitSet.initRaw(&class10, buddyInfo(buddy_end_page, 10).bitset_index),
+
+    for (class_arrays) |array, i| {
+        classes_value[i] = .{
+            .buddies = BitSet.initRaw(array, buddyInfo(buddy_end_page, i).bitset_index),
+            .freelist = null,
+        };
+    }
+
+    classes_value[11] = .{
+        .buddies = BitSet.initRaw(&.{}, 0),
         .freelist = null,
     };
 

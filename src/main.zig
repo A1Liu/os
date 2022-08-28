@@ -74,8 +74,6 @@ export fn main() callconv(.C) noreturn {
     std.debug.assert(page3.ptr != page2.ptr);
     std.debug.assert(page3.len != page2.len);
 
-    std.log.info("{*}", .{page.ptr});
-
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});
 
