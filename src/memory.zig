@@ -169,6 +169,10 @@ var free_pages: BitSet = undefined;
 // NOTE: The smallest size class is 4kb.
 var classes: [class_count]ClassInfo = undefined;
 
+pub fn initAllocator() void {
+    // os.memory_size
+}
+
 fn buddyInfo(page: u64, class: u6) BuddyInfo {
     // assert(is_aligned(page, 1 << class));
 

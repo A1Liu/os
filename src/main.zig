@@ -1,6 +1,9 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+// 1GB
+pub const memory_size = 1024 * 1024 * 1024;
+
 pub const c = @cImport({
     @cInclude("shared_values.h");
 });
