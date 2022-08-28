@@ -17,8 +17,8 @@ inline fn physicalAddress(ptr: anytype) u64 {
     return a - virtual_base;
 }
 
-inline fn kernelPtr(comptime T: type, address: u64) T {
-    return @intToPtr(T, address - virtual_base);
+inline fn kernelPtr(comptime T: type, address: u64) *T {
+    return @intToPtr(*T, address - virtual_base);
 }
 
 // Creates a series of set bits. Useful when defining bit masks to use in
@@ -145,14 +145,19 @@ pub fn initProtections() void {
 
 const class_count = 12;
 const FreeBlock = extern struct {
-    class: i64 align(4096),
+    class: u64 align(4096),
     next: ?*@This(),
     prev: ?*@This(),
 };
 
 const ClassInfo = struct {
     freelist: ?*align(4096) FreeBlock,
-    buddes: BitSet,
+    buddies: BitSet,
+};
+
+const BuddyInfo = struct {
+    buddy: u64,
+    bitset_index: u64,
 };
 
 var free_memory: u64 = undefined;
@@ -164,20 +169,46 @@ var free_pages: BitSet = undefined;
 // NOTE: The smallest size class is 4kb.
 var classes: [class_count]ClassInfo = undefined;
 
-pub fn allocPages(requested_count: u64, best_effort: bool) error{OutOfMemory}![]align(4096) u8 {
+fn buddyInfo(page: u64, class: u6) BuddyInfo {
+    // assert(is_aligned(page, 1 << class));
+
+    return BuddyInfo{
+        .buddy = page ^ (@as(u64, 1) << class),
+        .bitset_index = page >> (class + 1),
+    };
+}
+
+fn addToFreelist(page: u64, class: u64) void {
+    // assert(is_aligned(page, 1 << class));
+
+    const block = kernelPtr(FreeBlock, page * 4096);
+    const info = &classes[class];
+
+    block.class = class;
+    block.prev = null;
+    block.next = info.freelist;
+
+    if (info.freelist) |head| {
+        head.prev = block;
+    }
+
+    info.freelist = block;
+}
+
+pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]align(4096) u8 {
     if (requested_count == 0) return &[0]u8{};
 
     const result = found_class: {
-        const Result = struct { class: usize, freelist: *FreeBlock, count: u64 };
+        const Result = struct { class: u6, freelist: *FreeBlock, count: u64 };
 
-        const min_class = std.math.log2_int_ceil(u64, requested_count);
+        const min_class = std.math.log2_int_ceil(u32, requested_count);
         for (classes[min_class..]) |class, i| {
             const free = class.freelist orelse continue;
 
             break :found_class Result{
                 .count = requested_count,
                 .freelist = free,
-                .class = i,
+                .class = @truncate(u6, i),
             };
         }
 
@@ -199,10 +230,11 @@ pub fn allocPages(requested_count: u64, best_effort: bool) error{OutOfMemory}![]
         return error.OutOfMemory;
     };
 
-    const count: u64 = result.count;
-    const class: u64 = result.class;
-    const freelist: *FreeBlock = result.freelist;
+    const count = result.count;
+    const class = result.class;
+    const freelist = result.freelist;
 
+    // Pop from the freelist
     assert(freelist.class == class);
     classes[class].freelist = freelist.next;
     if (classes[class].freelist) |head| {
@@ -214,6 +246,41 @@ pub fn allocPages(requested_count: u64, best_effort: bool) error{OutOfMemory}![]
     const addr = physicalAddress(buf.ptr);
     const begin = addr / 4096;
     const end = begin + count;
+
+    // TODO: safety checks
+    // assert(all are usable);
+    // assert(all are free);
+    // set free pages to not free
+
+    if (class != class_count - 1) {
+        const index = buddyInfo(begin, class).bitset_index;
+        assert(classes[class].buddies.isSet(index));
+        classes[class].buddies.unset(index);
+    }
+
+    var i = class;
+    var page = begin;
+    var remaining = count;
+
+    while (remaining > 0 and i > 0) : (i -= 1) {
+        const child_class = i - 1;
+        const info = &classes[child_class];
+        const child_size = @as(u64, 1) << child_class;
+        const index = buddyInfo(page, child_class).bitset_index;
+
+        assert(info.buddies.isSet(index) == false);
+
+        if (remaining > child_size) {
+            remaining -= child_size;
+            page += child_size;
+            continue;
+        }
+
+        addToFreelist(page + child_size, child_class);
+        info.buddies.set(index);
+
+        if (remaining == child_size) break;
+    }
 
     _ = end;
     _ = class;
