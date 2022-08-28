@@ -336,6 +336,7 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
         // assert(is_aligned(page, 1 << (CLASS_COUNT - 1)));
         addToFreelist(page, class_count - 1);
     }
-    _ = end;
-    _ = count;
+
+    free_memory += count * 4096;
+    // BitSet__set_range(MemGlobals.free_pages, begin, end, true);
 }
