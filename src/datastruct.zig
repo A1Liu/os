@@ -26,28 +26,39 @@ pub const BitSet = struct {
     bit_length: usize,
     masks: [*]MaskInt,
 
-    pub fn init(arena: []MaskInt, bit_length: usize, initialValue: bool) @This() {
+    pub fn initRaw(arena: []MaskInt, bit_length: usize) @This() {
         const arena_bit_length = arena.len * @bitSizeOf(MaskInt);
         assert(bit_length <= arena_bit_length);
         assert(bit_length > arena_bit_length - @bitSizeOf(MaskInt));
-
-        const allSet = ~@as(MaskInt, 0);
-        const initial = if (initialValue) allSet else @as(MaskInt, 0);
-
-        for (arena) |*slot| {
-            slot.* = initial;
-        }
-
-        if (bit_length < arena_bit_length) {
-            const last_slot = &arena[arena.len - 1];
-            last_slot.* &= allSet >> (arena_bit_length - bit_length);
-        }
 
         return .{
             .bit_length = bit_length,
             .masks = arena.ptr,
         };
     }
+
+    // pub fn init(arena: []MaskInt, bit_length: usize, initialValue: bool) @This() {
+    //     const arena_bit_length = arena.len * @bitSizeOf(MaskInt);
+    //     assert(bit_length <= arena_bit_length);
+    //     assert(bit_length > arena_bit_length - @bitSizeOf(MaskInt));
+
+    //     const allSet = ~@as(MaskInt, 0);
+    //     const initial = if (initialValue) allSet else @as(MaskInt, 0);
+
+    //     for (arena) |*slot| {
+    //         slot.* = initial;
+    //     }
+
+    //     if (bit_length < arena_bit_length) {
+    //         const last_slot = &arena[arena.len - 1];
+    //         last_slot.* &= allSet >> (arena_bit_length - bit_length);
+    //     }
+
+    //     return .{
+    //         .bit_length = bit_length,
+    //         .masks = arena.ptr,
+    //     };
+    // }
 
     /// Returns true if the bit at the specified index
     /// is present in the set, false otherwise.

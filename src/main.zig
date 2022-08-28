@@ -61,7 +61,20 @@ export fn main() callconv(.C) noreturn {
     memory.initProtections();
     interrupts.init();
 
-    _ = memory;
+    memory.initAllocator();
+
+    const page = memory.allocPages(1, false) catch unreachable;
+    std.debug.assert(page.len == 4096);
+    memory.releasePages(page.ptr, 1);
+    const page2 = memory.allocPages(1, false) catch unreachable;
+    std.debug.assert(page.ptr == page2.ptr);
+    std.debug.assert(page.len == page2.len);
+
+    const page3 = memory.allocPages(1, false) catch unreachable;
+    std.debug.assert(page3.ptr != page2.ptr);
+    std.debug.assert(page3.len == page2.len);
+
+    std.log.info("{*}", .{page.ptr});
 
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});

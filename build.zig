@@ -114,6 +114,8 @@ pub fn build(b: *Builder) void {
         const debug_cmd_str = run_cmd_str ++ &[_][]const u8{
             "-S",
             "-s",
+            "-no-reboot",
+            "-no-shutdown",
         };
 
         const debug_cmd = b.addSystemCommand(debug_cmd_str);

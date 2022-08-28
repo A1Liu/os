@@ -18,7 +18,7 @@ inline fn physicalAddress(ptr: anytype) u64 {
 }
 
 inline fn kernelPtr(comptime T: type, address: u64) *T {
-    return @intToPtr(*T, address - virtual_base);
+    return @intToPtr(*T, address + virtual_base);
 }
 
 // Creates a series of set bits. Useful when defining bit masks to use in
@@ -125,14 +125,17 @@ pub fn initProtections() void {
     const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
 
     for (pte[exe_begin..exe_end]) |*slot| {
+        _ = slot;
         slot.* |= mmu_bits.r_el1;
     }
 
     for (pte[exe_end..ro_end]) |*slot| {
+        _ = slot;
         slot.* |= mmu_bits.r_el1 | mmu_bits.px;
     }
 
     for (pte[ro_end..]) |*slot| {
+        _ = slot;
         slot.* |= mmu_bits.px;
     }
 
@@ -160,7 +163,7 @@ const BuddyInfo = struct {
     bitset_index: u64,
 };
 
-var free_memory: u64 = undefined;
+var free_memory: u64 = 0;
 
 // Note: these are only ever used for safety
 var usable_pages: BitSet = undefined;
@@ -170,7 +173,71 @@ var free_pages: BitSet = undefined;
 //
 // Also: right now, the buddy bitset has no meaning for the largest size class,
 // since it has no buddy; we may want to change that later
-var classes: [class_count]ClassInfo = undefined;
+const buddy_max = std.mem.alignForward(os.memory_size, 4096 << class_count);
+const buddy_end_page = buddy_max / 4096;
+
+var class0 = [1]u64{0} ** (buddyInfo(buddy_end_page, 0).bitset_index / 64);
+var class1 = [1]u64{0} ** (buddyInfo(buddy_end_page, 1).bitset_index / 64);
+var class2 = [1]u64{0} ** (buddyInfo(buddy_end_page, 2).bitset_index / 64);
+var class3 = [1]u64{0} ** (buddyInfo(buddy_end_page, 3).bitset_index / 64);
+var class4 = [1]u64{0} ** (buddyInfo(buddy_end_page, 4).bitset_index / 64);
+var class5 = [1]u64{0} ** (buddyInfo(buddy_end_page, 5).bitset_index / 64);
+var class6 = [1]u64{0} ** (buddyInfo(buddy_end_page, 6).bitset_index / 64);
+var class7 = [1]u64{0} ** (buddyInfo(buddy_end_page, 7).bitset_index / 64);
+var class8 = [1]u64{0} ** (buddyInfo(buddy_end_page, 8).bitset_index / 64);
+var class9 = [1]u64{0} ** (buddyInfo(buddy_end_page, 9).bitset_index / 64);
+var class10 = [1]u64{0} ** (buddyInfo(buddy_end_page, 10).bitset_index / 64);
+
+var classes = classes: {
+    var classes_value: [class_count]ClassInfo = undefined;
+
+    classes_value[0] = .{
+        .buddies = BitSet.initRaw(&class0, buddyInfo(buddy_end_page, 0).bitset_index),
+        .freelist = null,
+    };
+    classes_value[1] = .{
+        .buddies = BitSet.initRaw(&class1, buddyInfo(buddy_end_page, 1).bitset_index),
+        .freelist = null,
+    };
+    classes_value[2] = .{
+        .buddies = BitSet.initRaw(&class2, buddyInfo(buddy_end_page, 2).bitset_index),
+        .freelist = null,
+    };
+    classes_value[3] = .{
+        .buddies = BitSet.initRaw(&class3, buddyInfo(buddy_end_page, 3).bitset_index),
+        .freelist = null,
+    };
+    classes_value[4] = .{
+        .buddies = BitSet.initRaw(&class4, buddyInfo(buddy_end_page, 4).bitset_index),
+        .freelist = null,
+    };
+    classes_value[5] = .{
+        .buddies = BitSet.initRaw(&class5, buddyInfo(buddy_end_page, 5).bitset_index),
+        .freelist = null,
+    };
+    classes_value[6] = .{
+        .buddies = BitSet.initRaw(&class6, buddyInfo(buddy_end_page, 6).bitset_index),
+        .freelist = null,
+    };
+    classes_value[7] = .{
+        .buddies = BitSet.initRaw(&class7, buddyInfo(buddy_end_page, 7).bitset_index),
+        .freelist = null,
+    };
+    classes_value[8] = .{
+        .buddies = BitSet.initRaw(&class8, buddyInfo(buddy_end_page, 8).bitset_index),
+        .freelist = null,
+    };
+    classes_value[9] = .{
+        .buddies = BitSet.initRaw(&class9, buddyInfo(buddy_end_page, 9).bitset_index),
+        .freelist = null,
+    };
+    classes_value[10] = .{
+        .buddies = BitSet.initRaw(&class10, buddyInfo(buddy_end_page, 10).bitset_index),
+        .freelist = null,
+    };
+
+    break :classes classes_value;
+};
 
 // TODO: add a bigger-arena freelist, for allocations that go beyond the max
 // class size?
@@ -178,6 +245,10 @@ var classes: [class_count]ClassInfo = undefined;
 pub fn initAllocator() void {
     // os.memory_size
     // TODO: add everything from __bss_end to device begin to the allocator
+    const begin = @ptrCast([*]align(4096) u8, @alignCast(4096, &__bss_end));
+    const end = mmio.MMIO_BASE;
+    const page_count = (end - @ptrToInt(begin)) / 4096;
+    releasePages(begin, @intCast(u32, page_count));
 }
 
 fn buddyInfo(page: u64, class: u6) BuddyInfo {
@@ -313,6 +384,7 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
     _ = end;
     _ = class;
 
+    std.log.info("allocated {*}..{*}", .{ buf.ptr, buf.ptr + buf.len });
     return buf;
 }
 
@@ -320,16 +392,22 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
     const addr = physicalAddress(data);
     // assert(addr == align_down(addr, _4KB));
 
+    // std.log.info("{x}", .{addr});
+
     const begin = addr / 4096;
     const end = begin + count;
 
     // assert(BitSet__get_all(MemGlobals.usable_pages, begin, end));
     // assert(!BitSet__get_any(MemGlobals.free_pages, begin, end));
 
-    var page = begin;
-    page: while (page < end) : (page += 1) {
+    var free_page = begin;
+    page: while (free_page < end) : (free_page += 1) {
         // TODO should probably do some math here to not have to iterate over every
         // page in data
+
+        // std.log.info("{x}", .{free_page});
+
+        var page = free_page;
         for (classes[0..(class_count - 1)]) |*info, class| {
             // assert(is_aligned(page, 1 << class));
             const buds = buddyInfo(page, @truncate(u6, class));
@@ -350,6 +428,7 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
         addToFreelist(page, class_count - 1);
     }
 
+    std.log.info("freed {*}..{*}", .{ data, data + count * 4096 });
     free_memory += count * 4096;
     // BitSet__set_range(MemGlobals.free_pages, begin, end, true);
 }
