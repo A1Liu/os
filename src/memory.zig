@@ -3,6 +3,7 @@ const os = @import("root");
 const c = os.c;
 const mmio = os.mmio;
 
+const assert = std.debug.assert;
 const BitSet = os.datastruct.BitSet;
 
 extern var _start: u8;
@@ -143,56 +144,79 @@ pub fn initProtections() void {
 }
 
 const class_count = 12;
-const FreeBlock = struct {
+const FreeBlock = extern struct {
+    class: i64 align(4096),
     next: ?*@This(),
     prev: ?*@This(),
-    class: i64,
 };
 
 const ClassInfo = struct {
-    freelist: ?*FreeBlock,
+    freelist: ?*align(4096) FreeBlock,
     buddes: BitSet,
 };
 
-// NOTE: The smallest size class is 4kb.
 var free_memory: u64 = undefined;
-var classes: [class_count]ClassInfo = undefined;
 
 // Note: these are only ever used for safety
 var usable_pages: BitSet = undefined;
 var free_pages: BitSet = undefined;
 
-fn ceilPow2(value: u64) u64 {
-    // stupid version for now
-    var i: u64 = 1;
-    while (i < value) : (i *= 2) {}
+// NOTE: The smallest size class is 4kb.
+var classes: [class_count]ClassInfo = undefined;
 
-    return i;
-}
+pub fn allocPages(requested_count: u64, best_effort: bool) error{OutOfMemory}![]align(4096) u8 {
+    if (requested_count == 0) return &[0]u8{};
 
-pub fn allocPages(count: u64) ![]align(4096) u8 {
-    var ret: []align(4096) u8 = &.{};
-    if (count == 0) return ret;
+    const result = found_class: {
+        const Result = struct { class: usize, freelist: *FreeBlock, count: u64 };
 
-    const min_class = std.math.log2_int_ceil(u64, count);
-    _ = min_class;
+        const min_class = std.math.log2_int_ceil(u64, requested_count);
+        for (classes[min_class..]) |class, i| {
+            const free = class.freelist orelse continue;
 
-    var class: u64 = undefined;
-    var freelist: *FreeBlock = undefined;
-    found_class: {
-        var i: usize = min_class;
-        while (i < class_count) : (i += 1) {
-            if (classes[i].freelist) |free| {
-                class = i;
-                freelist = free;
-
-                break :found_class;
-            }
+            break :found_class Result{
+                .count = requested_count,
+                .freelist = free,
+                .class = i,
+            };
         }
+
+        if (!best_effort) return error.OutOfMemory;
+
+        var i = min_class;
+        while (i > 0) {
+            i -= 1;
+
+            const free = classes[i].freelist orelse continue;
+
+            break :found_class Result{
+                .count = @as(u64, 1) << @truncate(u6, i),
+                .freelist = free,
+                .class = i,
+            };
+        }
+
+        return error.OutOfMemory;
+    };
+
+    const count: u64 = result.count;
+    const class: u64 = result.class;
+    const freelist: *FreeBlock = result.freelist;
+
+    assert(freelist.class == class);
+    classes[class].freelist = freelist.next;
+    if (classes[class].freelist) |head| {
+        head.prev = null;
     }
 
-    _ = class;
-    _ = freelist;
+    const buf = @ptrCast([*]align(4096) u8, freelist)[0..(count * 4096)];
 
-    return ret;
+    const addr = physicalAddress(buf.ptr);
+    const begin = addr / 4096;
+    const end = begin + count;
+
+    _ = end;
+    _ = class;
+
+    return buf;
 }

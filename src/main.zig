@@ -92,7 +92,7 @@ export fn main() callconv(.C) noreturn {
         }
 
         if (timer_value == 0) {
-            _ = memory.allocPages(0) catch unreachable;
+            _ = memory.allocPages(0, true) catch unreachable;
         }
     }
 }
