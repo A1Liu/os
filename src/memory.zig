@@ -144,20 +144,55 @@ pub fn initProtections() void {
 
 const class_count = 12;
 const FreeBlock = struct {
-    next: *@This(),
-    prev: *@This(),
+    next: ?*@This(),
+    prev: ?*@This(),
     class: i64,
 };
 
 const ClassInfo = struct {
-    freelist: *FreeBlock,
+    freelist: ?*FreeBlock,
     buddes: BitSet,
 };
 
 // NOTE: The smallest size class is 4kb.
 var free_memory: u64 = undefined;
-var classes = [class_count]ClassInfo;
+var classes: [class_count]ClassInfo = undefined;
 
 // Note: these are only ever used for safety
 var usable_pages: BitSet = undefined;
 var free_pages: BitSet = undefined;
+
+fn ceilPow2(value: u64) u64 {
+    // stupid version for now
+    var i: u64 = 1;
+    while (i < value) : (i *= 2) {}
+
+    return i;
+}
+
+pub fn allocPages(count: u64) ![]align(4096) u8 {
+    var ret: []align(4096) u8 = &.{};
+    if (count == 0) return ret;
+
+    const min_class = std.math.log2_int_ceil(u64, count);
+    _ = min_class;
+
+    var class: u64 = undefined;
+    var freelist: *FreeBlock = undefined;
+    found_class: {
+        var i: usize = min_class;
+        while (i < class_count) : (i += 1) {
+            if (classes[i].freelist) |free| {
+                class = i;
+                freelist = free;
+
+                break :found_class;
+            }
+        }
+    }
+
+    _ = class;
+    _ = freelist;
+
+    return ret;
+}

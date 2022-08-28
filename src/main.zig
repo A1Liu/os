@@ -90,5 +90,9 @@ export fn main() callconv(.C) noreturn {
             timer_value = value;
             std.log.info("Timer is now: {}", .{value});
         }
+
+        if (timer_value == 0) {
+            _ = memory.allocPages(0) catch unreachable;
+        }
     }
 }
