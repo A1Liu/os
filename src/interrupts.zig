@@ -183,7 +183,7 @@ const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
-const interval: u32 = 1000000;
+const interval: u32 = 10000;
 
 pub fn init() void {
     asm volatile (
@@ -238,8 +238,6 @@ fn handleTimerInterrupt(state: *RegisterState) void {
     const next_interrupt_at = prev_value + interval + interval;
     mmio.put32(.TIMER_C1, next_interrupt_at);
     mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
-
-    os.mmio.uartWrite("Timer Int\n");
 
     // scheduler.timerTick();
 }

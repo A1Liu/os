@@ -6,12 +6,6 @@ const std = @import("std");
 const memory = os.memory;
 const interrupts = os.interrupts;
 
-pub const TaskStatus = State;
-const State = union(enum) {
-    done: void,
-    running: void,
-};
-
 const TASK_ZOMBIE: u64 = 0;
 const TASK_RUNNING: u64 = 1;
 
@@ -34,7 +28,7 @@ const CpuContext = extern struct {
 extern fn ret_from_fork() void;
 extern fn cpu_switch_to(prev: *Task, next: *Task) callconv(.C) void;
 
-const Task = extern struct {
+pub const Task = extern struct {
     registers: CpuContext,
     state: u64,
     counter: u64,
@@ -57,7 +51,10 @@ const Task = extern struct {
         task.registers.x20 = arg;
         task.registers.pc = @bitCast(u64, ret_from_fork);
         task.registers.sp = @bitCast(u64, task_bytes.ptr + 4096);
+
         try tasks.append(task);
+
+        preemptEnable();
     }
 };
 
@@ -94,9 +91,16 @@ pub fn preemptDisable() void {
     current.preempt_count += 1;
 }
 
-pub fn scheduleFromTask() void {}
+export fn schedule_tail() callconv(.C) void {
+    preemptEnable();
+}
 
 pub fn schedule() void {
+    current.counter = 0;
+    scheduleImpl();
+}
+
+fn scheduleImpl() void {
     preemptDisable();
     const task: *Task = task: {
         while (true) {
@@ -138,7 +142,7 @@ pub fn timerTick() void {
     current.counter = 0;
 
     interrupts.enableIrqs();
-    schedule();
+    scheduleImpl();
     interrupts.disableIrqs();
 }
 
@@ -178,13 +182,16 @@ comptime {
             \\  ldr  x30, [x8]
             \\  mov  sp, x9
             \\  ret
+            \\
+            \\.globl ret_from_fork
+            \\ret_from_fork:
+            \\  bl   schedule_tail
+            \\  mov  x0, x20
+            \\  blr  x19 //should never return
+            \\
     );
 }
 
 pub fn init() void {
     tasks.append(current) catch unreachable;
-
-    if (current.state == TASK_ZOMBIE) {
-        schedule();
-    }
 }

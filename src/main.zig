@@ -104,14 +104,9 @@ export fn main() callconv(.C) noreturn {
         asm volatile ("nop");
 
         const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
-        if (timer_value != value) {
+        if (value - timer_value > 200000) {
             timer_value = value;
             std.log.info("Timer is now: {}", .{value});
-        }
-
-        if (timer_value == 0) {
-            const a = memory.allocPages(0, true) catch unreachable;
-            _ = memory.releasePages(a.ptr, 0);
         }
     }
 }
