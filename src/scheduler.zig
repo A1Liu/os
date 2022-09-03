@@ -14,7 +14,7 @@ const State = union(enum) {
 
 var a: [200]u8 = undefined;
 
-const Task = struct {
+pub const Task = struct {
     id: u32,
     status: State,
     update: fn (status: State, state: *anyopaque) State,
