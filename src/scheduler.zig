@@ -58,7 +58,7 @@ pub const Task = extern struct {
     }
 };
 
-var tasks: std.BoundedArray(*Task, 256) = .{};
+var tasks: std.BoundedArray(?*Task, 256) = .{};
 var current: *Task = &init_task;
 var init_task: Task = .{
     .state = TASK_RUNNING,
@@ -108,7 +108,9 @@ fn scheduleImpl() void {
             var count: u64 = 0;
             var next: ?*Task = null;
 
-            for (tasks.slice()) |task| {
+            for (tasks.slice()) |p| {
+                const task = p orelse continue;
+
                 if (task.state == TASK_RUNNING and task.counter > count) {
                     count = task.counter;
                     next = task;
@@ -117,10 +119,8 @@ fn scheduleImpl() void {
 
             if (next) |task| break :task task;
 
-            for (tasks.slice()) |task| {
-                if (task.state != TASK_RUNNING) {
-                    continue;
-                }
+            for (tasks.slice()) |p| {
+                const task = p orelse continue;
 
                 task.counter = (task.counter >> 1) + task.priority;
             }

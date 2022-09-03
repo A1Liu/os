@@ -57,6 +57,21 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
     }
 }
 
+fn printTask2(interval: u64) callconv(.C) void {
+    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+    while (true) {
+        asm volatile ("nop");
+
+        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        if (value - timer_value > interval) {
+            timer_value = value;
+            std.log.info("Mimer: {}", .{value});
+        }
+
+        scheduler.schedule();
+    }
+}
+
 fn printTask(interval: u64) callconv(.C) void {
     var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
     while (true) {
@@ -67,6 +82,8 @@ fn printTask(interval: u64) callconv(.C) void {
             timer_value = value;
             std.log.info("Timer is now: {}", .{value});
         }
+
+        scheduler.schedule();
     }
 }
 
@@ -119,6 +136,7 @@ export fn main() callconv(.C) noreturn {
     , .{});
 
     scheduler.Task.init(printTask, 200000) catch unreachable;
+    scheduler.Task.init(printTask2, 100000) catch unreachable;
 
     while (true) {
         // std.log.info("hello\n", .{});
