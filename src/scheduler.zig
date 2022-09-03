@@ -63,7 +63,7 @@ var current: *Task = &init_task;
 var init_task: Task = .{
     .state = TASK_RUNNING,
     .counter = 0,
-    .priority = 1,
+    .priority = 10,
     .preempt_count = 0,
 
     .registers = .{
@@ -130,6 +130,7 @@ fn scheduleImpl() void {
     };
 
     switchTo(task);
+
     preemptEnable();
 }
 

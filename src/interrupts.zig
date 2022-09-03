@@ -197,7 +197,7 @@ const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
-const interval: u32 = 50000;
+const interval: u32 = 20000;
 
 pub fn initVectors() void {
     asm volatile (
