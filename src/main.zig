@@ -11,6 +11,7 @@ pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
+pub const scheduler = @import("./scheduler.zig");
 pub const globals = @import("./globals.zig").globals;
 pub const datastruct = @import("./datastruct.zig");
 
@@ -62,6 +63,8 @@ export fn main() callconv(.C) noreturn {
     interrupts.init();
 
     memory.initAllocator();
+
+    scheduler.init();
 
     const page = memory.allocPages(1, false) catch unreachable;
     std.debug.assert(page.len == 4096);
