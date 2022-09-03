@@ -9,8 +9,8 @@ const State = union(enum) {
     running: void,
 };
 
-const TASK_RUNNING: u64 = 0;
-const TASK_ZOMBIE: u64 = 1;
+const TASK_ZOMBIE: u64 = 0;
+const TASK_RUNNING: u64 = 1;
 
 const CpuContext = extern struct {
     x19: u64,
@@ -29,7 +29,7 @@ const CpuContext = extern struct {
 };
 
 const Task = extern struct {
-    cpu_context: CpuContext,
+    registers: CpuContext,
     state: u64,
     counter: u64,
     priority: u64,
@@ -37,7 +37,7 @@ const Task = extern struct {
 };
 
 var tasks: std.BoundedArray(Task, 256) = .{};
-var current: *Task = &tasks.buffer[0];
+var current: *Task = undefined;
 
 pub fn doSmthn(status: State, state: *u64) State {
     _ = status;
@@ -46,8 +46,78 @@ pub fn doSmthn(status: State, state: *u64) State {
     return .running;
 }
 
+pub fn preemptEnable() void {
+    current.preempt_count += 1;
+}
+
+pub fn preemptDisable() void {
+    current.preempt_count -= 1;
+}
+
+pub fn scheduleFromTask() void {}
+
+pub fn schedule() void {
+    preemptDisable();
+    const task: *Task = task: {
+        while (true) {
+            var count: u64 = 0;
+            var next: ?*Task = null;
+
+            for (tasks.slice()) |*task| {
+                if (task.state == TASK_RUNNING and task.counter > count) {
+                    count = task.counter;
+                    next = task;
+                }
+            }
+
+            if (next) |task| {
+                break :task task;
+            }
+
+            for (tasks.slice()) |*task| {
+                if (task.state != TASK_RUNNING) continue;
+
+                task.counter = (task.counter >> 1) + task.priority;
+            }
+        }
+
+        unreachable;
+    };
+
+    switchTo(task);
+    preemptEnable();
+}
+
+pub fn switchTo(task: *Task) void {
+    _ = task;
+}
+
 pub fn init() void {
-    _ = tasks.addOne() catch unreachable;
+    current = tasks.addOne() catch unreachable;
+
+    current.registers.x19 = 0;
+    current.registers.x20 = 0;
+    current.registers.x21 = 0;
+    current.registers.x22 = 0;
+    current.registers.x23 = 0;
+    current.registers.x24 = 0;
+    current.registers.x25 = 0;
+    current.registers.x26 = 0;
+    current.registers.x27 = 0;
+    current.registers.x28 = 0;
+    current.registers.fp = 0;
+    current.registers.sp = 0;
+    current.registers.pc = 0;
+
+    current.state = 0;
+    current.counter = 0;
+    current.priority = 0;
+    current.preempt_count = 0;
+
+    if (current.state == 1) {
+        schedule();
+    }
+
     // const val: u64 = 0;
     // const task = Task.init(val, doSmthn);
 
