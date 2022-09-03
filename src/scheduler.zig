@@ -3,6 +3,8 @@
 const os = @import("root");
 const std = @import("std");
 
+const memory = os.memory;
+
 pub const TaskStatus = State;
 const State = union(enum) {
     done: void,
@@ -28,30 +30,66 @@ const CpuContext = extern struct {
     pc: u64,
 };
 
+extern fn ret_from_fork() void;
+
 const Task = extern struct {
     registers: CpuContext,
     state: u64,
     counter: u64,
     priority: u64,
     preempt_count: u64,
+
+    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !*@This() {
+        preemptDisable();
+
+        const task_bytes = try memory.allocPages(1, false);
+        errdefer memory.releasePages(task_bytes.ptr, 1);
+
+        const task = @ptrCast(*Task, &task_bytes[0]);
+        task.state = TASK_RUNNING;
+        task.preempt_count = 1; //disable preemtion until schedule_tail
+        task.priority = current.priority;
+        task.counter = task.priority;
+
+        task.registers.x19 = @bitCast(u64, task_fn);
+        task.registers.x20 = arg;
+        task.registers.pc = @bitCast(u64, ret_from_fork);
+        task.registers.sp = @bitCast(u64, task_bytes.ptr + 4096);
+        try tasks.append(task);
+    }
 };
 
-var tasks: std.BoundedArray(Task, 256) = .{};
-var current: *Task = undefined;
+var tasks: std.BoundedArray(*Task, 256) = .{};
+var current: *Task = &init_task;
+var init_task: Task = .{
+    .state = 0,
+    .counter = 0,
+    .priority = 0,
+    .preempt_count = 0,
 
-pub fn doSmthn(status: State, state: *u64) State {
-    _ = status;
-    _ = state;
-
-    return .running;
-}
+    .registers = .{
+        .x19 = 0,
+        .x20 = 0,
+        .x21 = 0,
+        .x22 = 0,
+        .x23 = 0,
+        .x24 = 0,
+        .x25 = 0,
+        .x26 = 0,
+        .x27 = 0,
+        .x28 = 0,
+        .fp = 0,
+        .sp = 0,
+        .pc = 0,
+    },
+};
 
 pub fn preemptEnable() void {
-    current.preempt_count += 1;
+    current.preempt_count -= 1;
 }
 
 pub fn preemptDisable() void {
-    current.preempt_count -= 1;
+    current.preempt_count += 1;
 }
 
 pub fn scheduleFromTask() void {}
@@ -63,7 +101,7 @@ pub fn schedule() void {
             var count: u64 = 0;
             var next: ?*Task = null;
 
-            for (tasks.slice()) |*task| {
+            for (tasks.slice()) |task| {
                 if (task.state == TASK_RUNNING and task.counter > count) {
                     count = task.counter;
                     next = task;
@@ -74,7 +112,7 @@ pub fn schedule() void {
                 break :task task;
             }
 
-            for (tasks.slice()) |*task| {
+            for (tasks.slice()) |task| {
                 if (task.state != TASK_RUNNING) continue;
 
                 task.counter = (task.counter >> 1) + task.priority;
@@ -92,27 +130,15 @@ pub fn switchTo(task: *Task) void {
     _ = task;
 }
 
+pub fn doSmthn(status: State, state: *u64) State {
+    _ = status;
+    _ = state;
+
+    return .running;
+}
+
 pub fn init() void {
-    current = tasks.addOne() catch unreachable;
-
-    current.registers.x19 = 0;
-    current.registers.x20 = 0;
-    current.registers.x21 = 0;
-    current.registers.x22 = 0;
-    current.registers.x23 = 0;
-    current.registers.x24 = 0;
-    current.registers.x25 = 0;
-    current.registers.x26 = 0;
-    current.registers.x27 = 0;
-    current.registers.x28 = 0;
-    current.registers.fp = 0;
-    current.registers.sp = 0;
-    current.registers.pc = 0;
-
-    current.state = 0;
-    current.counter = 0;
-    current.priority = 0;
-    current.preempt_count = 0;
+    tasks.append(current) catch unreachable;
 
     if (current.state == 1) {
         schedule();
