@@ -4,6 +4,7 @@ const os = @import("root");
 const std = @import("std");
 
 const memory = os.memory;
+const interrupts = os.interrupts;
 
 pub const TaskStatus = State;
 const State = union(enum) {
@@ -31,6 +32,7 @@ const CpuContext = extern struct {
 };
 
 extern fn ret_from_fork() void;
+extern fn cpu_switch_to(prev: *Task, next: *Task) callconv(.C) void;
 
 const Task = extern struct {
     registers: CpuContext,
@@ -62,7 +64,7 @@ const Task = extern struct {
 var tasks: std.BoundedArray(*Task, 256) = .{};
 var current: *Task = &init_task;
 var init_task: Task = .{
-    .state = 0,
+    .state = TASK_RUNNING,
     .counter = 0,
     .priority = 0,
     .preempt_count = 0,
@@ -126,57 +128,63 @@ pub fn schedule() void {
     preemptEnable();
 }
 
-pub fn switchTo(task: *Task) void {
-    _ = task;
+pub fn timerTick() void {
+    current.counter -= 1;
+
+    if (current.counter > 0 or current.preempt_count > 0) {
+        return;
+    }
+
+    current.counter = 0;
+
+    interrupts.enableIrqs();
+    schedule();
+    interrupts.disableIrqs();
 }
 
-pub fn doSmthn(status: State, state: *u64) State {
-    _ = status;
-    _ = state;
+pub fn switchTo(next: *Task) callconv(.C) void {
+    if (current == next) {
+        return;
+    }
 
-    return .running;
+    const prev = current;
+    current = next;
+
+    cpu_switch_to(prev, next);
+}
+
+comptime {
+    asm ("" ++
+            \\.global cpu_switch_to
+            \\cpu_switch_to:
+            \\
+        ++ std.fmt.comptimePrint("mov  x10, {}\n", .{@sizeOf(CpuContext)}) ++
+            \\  add  x8, x0, x10
+            \\  mov  x9, sp
+            \\  stp  x19, x20, [x8], #16 // store callee-saved registers
+            \\  stp  x21, x22, [x8], #16
+            \\  stp  x23, x24, [x8], #16
+            \\  stp  x25, x26, [x8], #16
+            \\  stp  x27, x28, [x8], #16
+            \\  stp  x29, x9, [x8], #16
+            \\  str  x30, [x8]
+            \\  add  x8, x1, x10
+            \\  ldp  x19, x20, [x8], #16 // restore callee-saved registers
+            \\  ldp  x21, x22, [x8], #16
+            \\  ldp  x23, x24, [x8], #16
+            \\  ldp  x25, x26, [x8], #16
+            \\  ldp  x27, x28, [x8], #16
+            \\  ldp  x29, x9, [x8], #16
+            \\  ldr  x30, [x8]
+            \\  mov  sp, x9
+            \\  ret
+    );
 }
 
 pub fn init() void {
     tasks.append(current) catch unreachable;
 
-    if (current.state == 1) {
+    if (current.state == TASK_ZOMBIE) {
         schedule();
     }
-
-    // const val: u64 = 0;
-    // const task = Task.init(val, doSmthn);
-
 }
-
-// pub const Task = struct {
-//     id: u32,
-//     status: State,
-//     update: fn (status: State, state: *anyopaque) State,
-//     state: *anyopaque,
-//
-//     pub fn init(
-//         initialState: anytype,
-//         comptime update: fn (status: State, state: *@TypeOf(initialState)) State,
-//     ) @This() {
-//         const T = @TypeOf(initialState);
-//
-//         const func = struct {
-//             fn func(status: State, state: *anyopaque) State {
-//                 const ptr = @ptrCast(*T, @alignCast(@alignOf(T), state));
-//
-//                 return update(status, ptr);
-//             }
-//         }.func;
-//
-//         const ptr = @ptrCast(*T, &a[0]);
-//         ptr.* = initialState;
-//
-//         return .{
-//             .id = 0,
-//             .status = .running,
-//             .state = ptr,
-//             .update = func,
-//         };
-//     }
-// };

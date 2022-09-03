@@ -1,8 +1,10 @@
 const std = @import("std");
 const os = @import("root");
+
 const arm = os.arm;
 const mmio = os.mmio;
 const globals = os.globals;
+const scheduler = os.scheduler;
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/entry.S
 //
@@ -196,7 +198,15 @@ pub fn init() void {
     }
 
     mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
+    enableIrqs();
+}
+
+pub fn enableIrqs() void {
     asm volatile ("msr daifclr, #2");
+}
+
+pub fn disableIrqs() void {
+    asm volatile ("msr daifset, #2");
 }
 
 pub export fn emptyHandler(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
@@ -230,6 +240,8 @@ fn handleTimerInterrupt(state: *RegisterState) void {
     mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
 
     os.mmio.uartWrite("Timer Int\n");
+
+    // scheduler.timerTick();
 }
 
 export fn handleIrq(state: *RegisterState) void {
@@ -244,8 +256,4 @@ export fn handleIrq(state: *RegisterState) void {
             unhandledException(state, "el1_irq", esr, elr);
         },
     }
-}
-
-pub fn enableIrqs() void {
-    mmio.put32(.ENABLE_IRQS_1, IRQ_FLAGS.SYSTEM_TIMER_IRQ_1);
 }
