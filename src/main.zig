@@ -65,7 +65,7 @@ fn printTask2(interval: u64) callconv(.C) void {
         const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
         if (value - timer_value > interval) {
             timer_value = value;
-            std.log.info("Mimer: {}", .{value});
+            std.log.info("- Mimer: {}", .{value});
         }
 
         scheduler.schedule();
@@ -80,7 +80,7 @@ fn printTask(interval: u64) callconv(.C) void {
         const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
         if (value - timer_value > interval) {
             timer_value = value;
-            std.log.info("Timer is now: {}", .{value});
+            std.log.info("  Timer: {}", .{value});
         }
 
         scheduler.schedule();
