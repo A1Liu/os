@@ -57,14 +57,33 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
     }
 }
 
+fn printTask(interval: u64) callconv(.C) void {
+    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+    while (true) {
+        asm volatile ("nop");
+
+        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        if (value - timer_value > interval) {
+            timer_value = value;
+            std.log.info("Timer is now: {}", .{value});
+        }
+    }
+}
+
 export fn main() callconv(.C) noreturn {
     mmio.init();
     memory.initProtections();
-    interrupts.init();
+
+    interrupts.initVectors();
+
+    scheduler.init();
 
     memory.initAllocator();
 
-    scheduler.init();
+    // This doesn't work when they're moved around; something's obviously wrong
+    // but I have no idea what.
+    interrupts.initTimer();
+    interrupts.enableIrqs();
 
     const page = memory.allocPages(1, false) catch unreachable;
     std.debug.assert(page.len == 4096);
@@ -99,14 +118,10 @@ export fn main() callconv(.C) noreturn {
         \\
     , .{});
 
-    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
-    while (true) {
-        asm volatile ("nop");
+    scheduler.Task.init(printTask, 200000) catch unreachable;
 
-        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
-        if (value - timer_value > 200000) {
-            timer_value = value;
-            std.log.info("Timer is now: {}", .{value});
-        }
+    while (true) {
+        // std.log.info("hello\n", .{});
+        scheduler.schedule();
     }
 }

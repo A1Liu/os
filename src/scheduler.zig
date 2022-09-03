@@ -35,7 +35,7 @@ pub const Task = extern struct {
     priority: u64,
     preempt_count: u64,
 
-    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !*@This() {
+    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !void {
         preemptDisable();
 
         const task_bytes = try memory.allocPages(1, false);
@@ -43,14 +43,14 @@ pub const Task = extern struct {
 
         const task = @ptrCast(*Task, &task_bytes[0]);
         task.state = TASK_RUNNING;
-        task.preempt_count = 1; //disable preemtion until schedule_tail
+        task.preempt_count = 1; // disable preemtion until schedule_tail
         task.priority = current.priority;
         task.counter = task.priority;
 
-        task.registers.x19 = @bitCast(u64, task_fn);
+        task.registers.x19 = @ptrToInt(task_fn);
         task.registers.x20 = arg;
-        task.registers.pc = @bitCast(u64, ret_from_fork);
-        task.registers.sp = @bitCast(u64, task_bytes.ptr + 4096);
+        task.registers.pc = @ptrToInt(ret_from_fork);
+        task.registers.sp = @ptrToInt(task_bytes.ptr + 4096);
 
         try tasks.append(task);
 
@@ -63,7 +63,7 @@ var current: *Task = &init_task;
 var init_task: Task = .{
     .state = TASK_RUNNING,
     .counter = 0,
-    .priority = 0,
+    .priority = 1,
     .preempt_count = 0,
 
     .registers = .{
@@ -102,6 +102,7 @@ pub fn schedule() void {
 
 fn scheduleImpl() void {
     preemptDisable();
+
     const task: *Task = task: {
         while (true) {
             var count: u64 = 0;
@@ -114,12 +115,12 @@ fn scheduleImpl() void {
                 }
             }
 
-            if (next) |task| {
-                break :task task;
-            }
+            if (next) |task| break :task task;
 
             for (tasks.slice()) |task| {
-                if (task.state != TASK_RUNNING) continue;
+                if (task.state != TASK_RUNNING) {
+                    continue;
+                }
 
                 task.counter = (task.counter >> 1) + task.priority;
             }
@@ -133,7 +134,7 @@ fn scheduleImpl() void {
 }
 
 pub fn timerTick() void {
-    current.counter -= 1;
+    current.counter -|= 1;
 
     if (current.counter > 0 or current.preempt_count > 0) {
         return;
@@ -142,14 +143,14 @@ pub fn timerTick() void {
     current.counter = 0;
 
     interrupts.enableIrqs();
+
     scheduleImpl();
+
     interrupts.disableIrqs();
 }
 
 pub fn switchTo(next: *Task) callconv(.C) void {
-    if (current == next) {
-        return;
-    }
+    if (current == next) return;
 
     const prev = current;
     current = next;
@@ -162,7 +163,7 @@ comptime {
             \\.global cpu_switch_to
             \\cpu_switch_to:
             \\
-        ++ std.fmt.comptimePrint("mov  x10, {}\n", .{@sizeOf(CpuContext)}) ++
+        ++ std.fmt.comptimePrint("mov  x10, {}\n", .{0}) ++
             \\  add  x8, x0, x10
             \\  mov  x9, sp
             \\  stp  x19, x20, [x8], #16 // store callee-saved registers

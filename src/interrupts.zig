@@ -183,14 +183,16 @@ const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 };
 
-const interval: u32 = 10000;
+const interval: u32 = 50000;
 
-pub fn init() void {
+pub fn initVectors() void {
     asm volatile (
         \\adr    x0, interrupt_vectors        // load VBAR_EL1 with virtual
         \\msr    vbar_el1, x0
         ::: "x0");
+}
 
+pub fn initTimer() void {
     {
         const counter_value = mmio.get32(.TIMER_CLO);
         @atomicStore(u32, &globals.time_counter, counter_value, .SeqCst);
@@ -198,7 +200,6 @@ pub fn init() void {
     }
 
     mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
-    enableIrqs();
 }
 
 pub fn enableIrqs() void {
@@ -239,7 +240,7 @@ fn handleTimerInterrupt(state: *RegisterState) void {
     mmio.put32(.TIMER_C1, next_interrupt_at);
     mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
 
-    // scheduler.timerTick();
+    scheduler.timerTick();
 }
 
 export fn handleIrq(state: *RegisterState) void {
