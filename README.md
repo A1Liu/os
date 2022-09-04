@@ -40,8 +40,8 @@
 
 ## Doc Sources
 - `RPi Model 3B+ Peripherals Manual.pdf` - https://github.com/raspberrypi/documentation/files/1888662/BCM2837-ARM-Peripherals.-.Revised.-.V2-1.pdf
-- `ARM Clang Reference Manual.pdf` - https://documentation-service.arm.com/static/5f0db3ca62665459ec77bc02?token=
-- `ARMv8 Reference Manual.pdf` - https://documentation-service.arm.com/static/60119835773bb020e3de6fee?token=
+- `ARM Clang Reference Manual.pdf` - https://documentation-service.arm.com/static/5f0db3ca62665459ec77bc02
+- `ARMv8 Reference Manual.pdf` - https://documentation-service.arm.com/static/60119835773bb020e3de6fee
 
 ## Code Organization
 
