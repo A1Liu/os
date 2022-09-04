@@ -20,11 +20,10 @@ pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
 
 // TODO:
-// page mappings
-// page allocators
+// page mapping utilities
 // interrupt-based mini-uart handler
-// scheduler
 // syscalls - make everything either really fast or async
+// frame buffer
 
 pub fn log(
     comptime message_level: std.log.Level,
@@ -97,8 +96,8 @@ export fn main() callconv(.C) noreturn {
 
     memory.initAllocator();
 
-    // This doesn't work when they're moved around; something's obviously wrong
-    // but I have no idea what.
+    // This doesn't work when these two are moved around; something's
+    // obviously wrong but I have no idea what.
     interrupts.initTimer();
     interrupts.enableIrqs();
 

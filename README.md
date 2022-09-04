@@ -36,3 +36,16 @@
 - Pi General - https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
 - Pi 4 - https://www.rpi4os.com/
 - Some maybe-useful ARMv8 info - https://m.youtube.com/watch?v=6OfIzhuw1RE
+
+# Code Organization
+
+Concept                 | Location
+---                     | ---
+Boot-up                 | `src/boot.S`
+System Timer            | `src/interrupts.zig`
+Interrupt Vectors       | `src/interrrupts.zig`
+MMU Protections         | `src/memory.zig`
+Page Allocator          | `src/memory.zig`
+Task Scheduler          | `src/scheduler.zig`
+Mini-UART Handler       | `src/mmio.zig`
+Linker Script           | `src/link.ld`
