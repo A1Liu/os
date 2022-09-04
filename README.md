@@ -35,9 +35,15 @@
 - Buddy allocator example code - https://github.com/a2liu/dumboss/blob/main/kern/memory.c
 - Pi General - https://wiki.osdev.org/Raspberry_Pi_Bare_Bones
 - Pi 4 - https://www.rpi4os.com/
+- Quick-reference for instructions - https://courses.cs.washington.edu/courses/cse469/19wi/arm64.pdf
 - Some maybe-useful ARMv8 info - https://m.youtube.com/watch?v=6OfIzhuw1RE
 
-# Code Organization
+## Doc Sources
+- `RPi Model 3B+ Peripherals Manual.pdf` - https://github.com/raspberrypi/documentation/files/1888662/BCM2837-ARM-Peripherals.-.Revised.-.V2-1.pdf
+- `ARM Clang Reference Manual.pdf` - https://documentation-service.arm.com/static/5f0db3ca62665459ec77bc02?token=
+- `ARMv8 Reference Manual.pdf` - https://documentation-service.arm.com/static/60119835773bb020e3de6fee?token=
+
+## Code Organization
 
 Concept                 | Location
 ---                     | ---
