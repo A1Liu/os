@@ -12,7 +12,6 @@ pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
 pub const scheduler = @import("./scheduler.zig");
-pub const globals = @import("./globals.zig").globals;
 pub const datastruct = @import("./datastruct.zig");
 
 pub const log_level: std.log.Level = .info;
@@ -57,11 +56,11 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 }
 
 fn printTask2(interval: u64) callconv(.C) void {
-    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+    var timer_value: u32 = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
     while (true) {
         asm volatile ("nop");
 
-        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        const value = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
         if (value - timer_value > interval) {
             timer_value = value;
             std.log.info("- Mimer: {}", .{value});
@@ -72,11 +71,11 @@ fn printTask2(interval: u64) callconv(.C) void {
 }
 
 fn printTask(interval: u64) callconv(.C) void {
-    var timer_value: u32 = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+    var timer_value: u32 = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
     while (true) {
         asm volatile ("nop");
 
-        const value = @atomicLoad(u32, &globals.time_counter, .SeqCst);
+        const value = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
         if (value - timer_value > interval) {
             timer_value = value;
             std.log.info("  Timer: {}", .{value});
@@ -122,7 +121,7 @@ export fn main() callconv(.C) noreturn {
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
 
-    std.log.info("bss value: {*}", .{globals});
+    // std.log.info("bss value: {*}", .{globals});
 
     std.log.info(
         \\

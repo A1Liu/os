@@ -3,7 +3,6 @@ const os = @import("root");
 
 const arm = os.arm;
 const mmio = os.mmio;
-const globals = os.globals;
 const scheduler = os.scheduler;
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson03/src/entry.S
@@ -71,18 +70,18 @@ comptime {
     asm ("" ++
             \\el1_irq:
             \\
-        ++ RegisterState.save_registers ++
+        ++ RegisterState.save ++
             \\mov x0, sp
             \\bl handleIrq
             \\
-        ++ RegisterState.pop_registers ++
+        ++ RegisterState.pop ++
             \\
     );
 
     inline for (invalid_handler_names) |name, idx| {
         const index = std.fmt.comptimePrint("{}", .{idx});
 
-        asm (name ++ ":\n" ++ RegisterState.save_registers ++
+        asm (name ++ ":\n" ++ RegisterState.save ++
                 "mov x1, " ++ index ++ "\n" ++
                 \\mov x0, sp
                 \\mrs x2, esr_el1
@@ -137,7 +136,7 @@ pub const RegisterState = extern struct {
 
     const size_str = std.fmt.comptimePrint("{}", .{@sizeOf(RegisterState)});
 
-    const save_registers =
+    const save =
         "sub  sp, sp, " ++ size_str ++ "\n" ++
         \\   stp  x0, x1, [sp, #16 * 0]
         \\   stp  x2, x3, [sp, #16 * 1]
@@ -163,7 +162,7 @@ pub const RegisterState = extern struct {
         \\
     ;
 
-    const pop_registers =
+    const pop =
         \\   ldr  x23, [sp, #16 * 16]
         \\   ldp  x30, x22, [sp, #16 * 15]
         \\
@@ -206,10 +205,11 @@ pub fn initVectors() void {
         ::: "x0");
 }
 
+pub var time_counter: u32 = 0;
 pub fn initTimer() void {
     {
         const counter_value = mmio.get32(.TIMER_CLO);
-        @atomicStore(u32, &globals.time_counter, counter_value, .SeqCst);
+        @atomicStore(u32, &time_counter, counter_value, .SeqCst);
         mmio.put32(.TIMER_C1, counter_value + interval);
     }
 
@@ -259,7 +259,7 @@ pub fn unhandledException(
 fn handleTimerInterrupt(state: *RegisterState) void {
     _ = state;
 
-    const prev_value = @atomicRmw(u32, &globals.time_counter, .Add, interval, .SeqCst);
+    const prev_value = @atomicRmw(u32, &time_counter, .Add, interval, .SeqCst);
     const next_interrupt_at = prev_value + interval + interval;
     mmio.put32(.TIMER_C1, next_interrupt_at);
     mmio.put32(.TIMER_CS, mmio.constants.TIMER_CS_M1);
