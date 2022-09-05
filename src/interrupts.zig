@@ -137,7 +137,7 @@ pub const RegisterState = extern struct {
     const size_str = std.fmt.comptimePrint("{}", .{@sizeOf(RegisterState)});
 
     const save =
-        "sub  sp, sp, " ++ size_str ++ "\n" ++
+        "    sub  sp, sp, " ++ size_str ++ "\n" ++
         \\   stp  x0, x1, [sp, #16 * 0]
         \\   stp  x2, x3, [sp, #16 * 1]
         \\   stp  x4, x5, [sp, #16 * 2]

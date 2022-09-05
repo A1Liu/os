@@ -55,3 +55,12 @@ Page Allocator          | `src/memory.zig`
 Task Scheduler          | `src/scheduler.zig`
 Mini-UART Handler       | `src/mmio.zig`
 Linker Script           | `src/link.ld`
+
+## To Do
+- Page mapping utilities
+- interrupt-based mini-uart handler
+- syscalls
+- frame buffer
+- user-space executables
+- FAT32 handler
+- Debug stuffs

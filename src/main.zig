@@ -18,12 +18,6 @@ pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
 
-// TODO:
-// page mapping utilities
-// interrupt-based mini-uart handler
-// syscalls - make everything either really fast or async
-// frame buffer
-
 pub fn log(
     comptime message_level: std.log.Level,
     comptime scope: @Type(.EnumLiteral),
