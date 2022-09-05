@@ -224,11 +224,21 @@ pub fn disableIrqs() void {
     asm volatile ("msr daifset, #2");
 }
 
-pub export fn emptyHandler(state: *RegisterState, index: usize, esr: u64, elr: u64) callconv(.C) noreturn {
+pub export fn emptyHandler(
+    state: *RegisterState,
+    index: usize,
+    esr: u64,
+    elr: u64,
+) callconv(.C) noreturn {
     unhandledException(state, invalid_handler_names[index], esr, elr);
 }
 
-pub fn unhandledException(state: *RegisterState, name: []const u8, esr: u64, elr: u64) noreturn {
+pub fn unhandledException(
+    state: *RegisterState,
+    name: []const u8,
+    esr: u64,
+    elr: u64,
+) noreturn {
     _ = state;
 
     const sp = arm.readSp();
@@ -258,7 +268,6 @@ fn handleTimerInterrupt(state: *RegisterState) void {
 }
 
 export fn handleIrq(state: *RegisterState) void {
-    _ = state;
     const irq = mmio.get32(.IRQ_PENDING_1);
     switch (irq) {
         mmio.constants.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
