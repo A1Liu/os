@@ -1,7 +1,9 @@
 const std = @import("std");
 const os = @import("root");
+
 const c = os.c;
 const mmio = os.mmio;
+const scheduler = os.scheduler;
 
 const assert = std.debug.assert;
 const BitSet = os.datastruct.BitSet;
@@ -276,6 +278,9 @@ fn removeFromFreelist(page: u64, class: u64) void {
 pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]align(4096) u8 {
     if (requested_count == 0) return &[0]u8{};
 
+    scheduler.preemptDisable();
+    defer scheduler.preemptEnable();
+
     const result = found_class: {
         const Result = struct { class: u6, freelist: *FreeBlock, count: u64 };
 
@@ -368,6 +373,9 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
 }
 
 pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
+    scheduler.preemptDisable();
+    defer scheduler.preemptEnable();
+
     const addr = physicalAddress(data);
     // assert(addr == align_down(addr, _4KB));
 

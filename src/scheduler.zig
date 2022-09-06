@@ -6,8 +6,10 @@ const std = @import("std");
 const memory = os.memory;
 const interrupts = os.interrupts;
 
-const TASK_ZOMBIE: u64 = 0;
-const TASK_RUNNING: u64 = 1;
+const TaskState = enum(u8) {
+    running,
+    waiting,
+};
 
 const CpuContext = extern struct {
     x19: u64,
@@ -26,23 +28,21 @@ const CpuContext = extern struct {
 };
 
 extern fn ret_from_fork() void;
-extern fn cpu_switch_to(prev: *Task, next: *Task) callconv(.C) void;
+extern fn cpu_switch_to(prev: *TaskInfo, next: *TaskInfo) callconv(.C) void;
 
-pub const Task = extern struct {
-    registers: CpuContext,
-    state: u64,
-    counter: u64,
-    priority: u64,
-    preempt_count: u64,
+pub const Task = struct {
+    id: u8,
 
-    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !void {
+    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !@This() {
         preemptDisable();
+        defer preemptEnable();
 
         const task_bytes = try memory.allocPages(1, false);
         errdefer memory.releasePages(task_bytes.ptr, 1);
 
-        const task = @ptrCast(*Task, &task_bytes[0]);
-        task.state = TASK_RUNNING;
+        const task = @ptrCast(*TaskInfo, task_bytes.ptr);
+        task.state = .running;
+        task.id = @intCast(u8, tasks.len);
         task.preempt_count = 1; // disable preemtion until schedule_tail
         task.priority = current.priority;
         task.counter = task.priority;
@@ -54,14 +54,27 @@ pub const Task = extern struct {
 
         try tasks.append(task);
 
-        preemptEnable();
+        return @This(){
+            .id = task.id,
+        };
     }
 };
 
-var tasks: std.BoundedArray(?*Task, 256) = .{};
-var current: *Task = &init_task;
-var init_task: Task = .{
-    .state = TASK_RUNNING,
+const TaskInfo = extern struct {
+    registers: CpuContext,
+    state: TaskState,
+    id: u8,
+    padding_1: u16 = 0,
+    preempt_count: u32,
+    counter: u64,
+    priority: u64,
+};
+
+var tasks: std.BoundedArray(?*TaskInfo, 256) = .{};
+var current = &init_task;
+var init_task = TaskInfo{
+    .state = .running,
+    .id = 0,
     .counter = 0,
     .priority = 10,
     .preempt_count = 0,
@@ -103,15 +116,15 @@ pub fn schedule() void {
 fn scheduleImpl() void {
     preemptDisable();
 
-    const task: *Task = task: {
+    const task = task: {
         while (true) {
             var count: u64 = 0;
-            var next: ?*Task = null;
+            var next: ?*TaskInfo = null;
 
             for (tasks.slice()) |p| {
                 const task = p orelse continue;
 
-                if (task.state == TASK_RUNNING and task.counter > count) {
+                if (task.state == .running and task.counter > count) {
                     count = task.counter;
                     next = task;
                 }
@@ -150,7 +163,7 @@ pub fn timerTick() void {
     interrupts.disableIrqs();
 }
 
-pub fn switchTo(next: *Task) callconv(.C) void {
+fn switchTo(next: *TaskInfo) callconv(.C) void {
     if (current == next) return;
 
     const prev = current;

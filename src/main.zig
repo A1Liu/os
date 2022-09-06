@@ -127,8 +127,8 @@ export fn main() callconv(.C) noreturn {
         \\
     , .{});
 
-    scheduler.Task.init(printTask, 200000) catch unreachable;
-    scheduler.Task.init(printTask2, 100000) catch unreachable;
+    _ = scheduler.Task.init(printTask, 200000) catch unreachable;
+    _ = scheduler.Task.init(printTask2, 100000) catch unreachable;
 
     while (true) {
         // std.log.info("hello\n", .{});

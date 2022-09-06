@@ -12,6 +12,7 @@ const GPIO_BASE = MMIO_BASE + 0x200000;
 const AUX_BASE = (GPIO_BASE + 0x15000);
 
 const MmioRegister = enum(u64) {
+    // Page 112 of peripherals manual
     IRQ_BASIC_PENDING = MMIO_BASE + 0x0000B200,
     IRQ_PENDING_1 = MMIO_BASE + 0x0000B204,
     IRQ_PENDING_2 = MMIO_BASE + 0x0000B208,
@@ -26,9 +27,12 @@ const MmioRegister = enum(u64) {
     GPFSEL1 = GPIO_BASE + 0x4,
     GPSET0 = GPIO_BASE + 0x1C,
     GPCLR0 = GPIO_BASE + 0x28,
-    GPPUD = GPIO_BASE + 0x94, // Controls actuation of pull up/down to ALL GPIO pins.
-    GPPUDCLK0 = GPIO_BASE + 0x98, // Controls actuation of pull up/down for specific GPIO pin.
+    // Controls actuation of pull up/down to ALL GPIO pins.
+    GPPUD = GPIO_BASE + 0x94,
+    // Controls actuation of pull up/down for specific GPIO pin.
+    GPPUDCLK0 = GPIO_BASE + 0x98,
 
+    AUX_IRQ = AUX_BASE + 0x00,
     AUX_ENABLES = AUX_BASE + 0x04,
     AUX_MU_IO_REG = AUX_BASE + 0x40,
     AUX_MU_IER_REG = AUX_BASE + 0x44,

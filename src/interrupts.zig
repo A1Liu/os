@@ -192,28 +192,11 @@ pub const RegisterState = extern struct {
     ;
 };
 
-const IRQ_FLAGS = struct {
-    const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
-};
-
-const interval: u32 = 20000;
-
 pub fn initVectors() void {
     asm volatile (
         \\adr    x0, interrupt_vectors        // load VBAR_EL1 with virtual
         \\msr    vbar_el1, x0
         ::: "x0");
-}
-
-pub var time_counter: u32 = 0;
-pub fn initTimer() void {
-    {
-        const counter_value = mmio.get32(.TIMER_CLO);
-        @atomicStore(u32, &time_counter, counter_value, .SeqCst);
-        mmio.put32(.TIMER_C1, counter_value + interval);
-    }
-
-    mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
 }
 
 pub fn enableIrqs() void {
@@ -256,6 +239,18 @@ pub fn unhandledException(
     }
 }
 
+const interval: u32 = 20000;
+pub var time_counter: u32 = 0;
+pub fn initTimer() void {
+    {
+        const counter_value = mmio.get32(.TIMER_CLO);
+        @atomicStore(u32, &time_counter, counter_value, .SeqCst);
+        mmio.put32(.TIMER_C1, counter_value + interval);
+    }
+
+    mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
+}
+
 fn handleTimerInterrupt(state: *RegisterState) void {
     _ = state;
 
@@ -267,8 +262,14 @@ fn handleTimerInterrupt(state: *RegisterState) void {
     scheduler.timerTick();
 }
 
+// Page 113 of peripherals manual
+const IRQ_FLAGS = struct {
+    const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
+};
+
 export fn handleIrq(state: *RegisterState) void {
     const irq = mmio.get32(.IRQ_PENDING_1);
+
     switch (irq) {
         mmio.constants.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
 
