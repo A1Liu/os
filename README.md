@@ -38,6 +38,7 @@
 - Pi 4 - https://www.rpi4os.com/
 - Quick-reference for instructions - https://courses.cs.washington.edu/courses/cse469/19wi/arm64.pdf
 - Some maybe-useful ARMv8 info - https://m.youtube.com/watch?v=6OfIzhuw1RE
+- Frame buffer - https://forums.raspberrypi.com/viewtopic.php?t=155825
 
 ## Doc Sources
 - `RPi Model 3B+ Peripherals Manual.pdf` - https://github.com/raspberrypi/documentation/files/1888662/BCM2837-ARM-Peripherals.-.Revised.-.V2-1.pdf
