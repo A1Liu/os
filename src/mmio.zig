@@ -1,5 +1,9 @@
 const os = @import("root");
+const std = @import("std");
+
 const arm = os.arm;
+const interrupts = os.interrupts;
+const scheduler = os.scheduler;
 
 pub const constants = struct {
     pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
@@ -93,17 +97,30 @@ pub fn init() void {
 }
 
 pub fn uartWrite(str: []const u8) void {
-
-    // Get interrupt status (page 13 of peripherals manual)
-    // get32(.AUX_MU_IIR_REG, 1 << 1);
-
-    // Clear the transmit interrupt (page 13 of peripherals manual)
-    // put32(.AUX_MU_IIR_REG, 1 << 2);
-
     for (str) |c| {
         // Wait for UART to become ready to transmit.
         while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}
 
         put32(.AUX_MU_IO_REG, c);
     }
+}
+
+pub fn uartInterruptHandler(state: *interrupts.RegisterState) void {
+    _ = state;
+
+    // Get interrupt status (page 13 of peripherals manual)
+    const interrupt_status = get32(.AUX_MU_IIR_REG) & (1 << 1);
+    if (interrupt_status == 0) {
+        return;
+    }
+
+    scheduler.preemptDisable();
+    defer scheduler.preemptEnable();
+
+    while ((get32(.AUX_MU_LSR_REG) & 0x20) != 0) {
+        put32(.AUX_MU_IO_REG, 'H');
+    }
+
+    // Clear the transmit interrupt (page 13 of peripherals manual)
+    put32(.AUX_MU_IIR_REG, 1 << 2);
 }

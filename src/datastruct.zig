@@ -1,6 +1,9 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const Allocator = std.Allocator;
+
+const expect = std.testing.expect;
 const assert = std.debug.assert;
 
 /// A range of indices within a bitset.
