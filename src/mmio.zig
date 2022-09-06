@@ -139,15 +139,21 @@ pub fn uartTask(_: u64) callconv(.C) void {
 
         q_head.task.wake();
 
-        const next = @atomicLoad(?*Node, &q_head.next, .SeqCst) orelse {
-            var tail = @atomicLoad(*Node, q_tail, .SeqCst);
-            std.debug.assert(tail == q_head);
+        q_head.str = "";
+        q_head.task = uart_task;
 
-            q_head.str = "";
-            q_head.task = uart_task;
+        const next = next: {
+            while (true) {
+                if (@atomicLoad(?*Node, &q_head.next, .SeqCst)) |n| break :next n;
 
-            Task.sleep();
-            continue :outer;
+                // This is technically not required
+                var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+                std.debug.assert(tail == q_head);
+
+                Task.sleep();
+            }
+
+            unreachable;
         };
 
         q_head.str = next.str;
