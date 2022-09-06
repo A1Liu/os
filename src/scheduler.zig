@@ -44,7 +44,7 @@ pub const Task = struct {
         task.state = .running;
         task.id = @intCast(u8, tasks.len);
         task.preempt_count = 1; // disable preemtion until schedule_tail
-        task.priority = current.priority;
+        task.priority = current_task.priority;
         task.counter = task.priority;
 
         task.registers.x19 = @ptrToInt(task_fn);
@@ -56,6 +56,12 @@ pub const Task = struct {
 
         return Self{
             .id = task.id,
+        };
+    }
+
+    pub fn current() Self {
+        return Self{
+            .id = current_task.id,
         };
     }
 
@@ -83,17 +89,17 @@ const TaskInfo = extern struct {
 
     // This requires preempts to already be disabled
     fn switchToUnsafe(next: *TaskInfo) callconv(.C) void {
-        if (current == next) return;
+        if (current_task == next) return;
 
-        const prev = current;
-        current = next;
+        const prev = current_task;
+        current_task = next;
 
         cpu_switch_to(prev, next);
     }
 };
 
 var tasks: std.BoundedArray(?*TaskInfo, 256) = .{};
-var current = &init_task;
+var current_task = &init_task;
 var init_task = TaskInfo{
     .state = .running,
     .id = 0,
@@ -119,19 +125,19 @@ var init_task = TaskInfo{
 };
 
 pub fn init() void {
-    tasks.append(current) catch unreachable;
+    tasks.append(current_task) catch unreachable;
 }
 
 pub fn preemptEnable() void {
-    current.preempt_count -= 1;
+    current_task.preempt_count -= 1;
 }
 
 pub fn preemptDisable() void {
-    current.preempt_count += 1;
+    current_task.preempt_count += 1;
 }
 
 pub fn schedule() void {
-    current.counter = 0;
+    current_task.counter = 0;
     scheduleImpl();
 }
 
@@ -170,13 +176,13 @@ fn scheduleImpl() void {
 }
 
 pub fn timerTick() void {
-    current.counter -|= 1;
+    current_task.counter -|= 1;
 
-    if (current.counter > 0 or current.preempt_count > 0) {
+    if (current_task.counter > 0 or current_task.preempt_count > 0) {
         return;
     }
 
-    current.counter = 0;
+    current_task.counter = 0;
 
     interrupts.enableIrqs();
 
