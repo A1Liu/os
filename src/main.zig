@@ -80,12 +80,13 @@ fn printTask(interval: u64) callconv(.C) void {
 }
 
 export fn main() callconv(.C) noreturn {
-    mmio.init();
     memory.initProtections();
 
     interrupts.initVectors();
 
     scheduler.init();
+
+    mmio.init();
 
     memory.initAllocator();
 

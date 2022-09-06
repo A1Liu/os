@@ -81,7 +81,10 @@ pub fn init() void {
 
     put32(.AUX_ENABLES, 1); //Enable mini uart (this also enables access to its registers)
     put32(.AUX_MU_CNTL_REG, 0); //Disable auto flow control and disable receiver and transmitter (for now)
+
     put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
+    // put32(.AUX_MU_IER_REG, 1 << 1); // Enable transmit interrupts
+
     put32(.AUX_MU_LCR_REG, 3); //Enable 8 bit mode
     put32(.AUX_MU_MCR_REG, 0); //Set RTS line to be always high
     put32(.AUX_MU_BAUD_REG, 270); //Set baud rate to 115200
@@ -90,6 +93,13 @@ pub fn init() void {
 }
 
 pub fn uartWrite(str: []const u8) void {
+
+    // Get interrupt status (page 13 of peripherals manual)
+    // get32(.AUX_MU_IIR_REG, 1 << 1);
+
+    // Clear the transmit interrupt (page 13 of peripherals manual)
+    // put32(.AUX_MU_IIR_REG, 1 << 2);
+
     for (str) |c| {
         // Wait for UART to become ready to transmit.
         while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}
