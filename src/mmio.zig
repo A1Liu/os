@@ -72,6 +72,11 @@ pub inline fn put32(comptime reg: MmioRegister, data: u32) void {
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson01/rpi-os.md#mini-uart-initialization
 pub fn init() void {
+    uart_task = Task.init(uartTask, 0) catch unreachable;
+    queue_head.str = "";
+    queue_head.task = uart_task;
+    queue_tail = &queue_head;
+
     var selector = get32(.GPFSEL1);
     selector &= ~@as(u32, 0b111 << 12); // clean gpio14
     selector |= 0b010 << 12; // set alt5 for gpio14
@@ -88,7 +93,11 @@ pub fn init() void {
     put32(.AUX_ENABLES, 1); //Enable mini uart (this also enables access to its registers)
     put32(.AUX_MU_CNTL_REG, 0); //Disable auto flow control and disable receiver and transmitter (for now)
 
-    put32(.AUX_MU_IER_REG, 1 << 1); // Enable transmit interrupts
+    //p 13, Peripherals Manual:
+    // - bits 3:2 must be 1 for interrupts to be enabled
+    // - bit 1 must be set for transmit interrupts
+    const a: u32 = (1 << 1) | (0x11 << 2);
+    put32(.AUX_MU_IER_REG, a);
 
     put32(.AUX_MU_LCR_REG, 3); //Enable 8 bit mode
     put32(.AUX_MU_MCR_REG, 0); //Set RTS line to be always high
@@ -96,10 +105,6 @@ pub fn init() void {
 
     put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
 
-    uart_task = Task.init(uartTask, 0) catch unreachable;
-    queue_head.str = "";
-    queue_head.task = uart_task;
-    queue_tail = &queue_head;
 }
 
 const Node = struct {
@@ -120,6 +125,10 @@ pub fn uartTask(_: u64) callconv(.C) void {
         for (q_head.str) |c, i| {
             if ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {
                 q_head.str = q_head.str[i..];
+
+                const config = get32(.AUX_MU_IER_REG);
+                put32(.AUX_MU_IER_REG, config | (1 << 1));
+
                 Task.sleep();
 
                 continue :outer;
@@ -170,9 +179,17 @@ pub fn handleUartInterrupt(state: *interrupts.RegisterState) void {
 
     _ = state;
 
-    // Clear the transmit interrupt (page 13 of peripherals manual)
-    put32(.AUX_MU_IIR_REG, 1 << 2);
+    const uart_status = get32(.AUX_MU_IIR_REG);
+    var config = get32(.AUX_MU_IER_REG);
 
+    if ((uart_status & (1 << 1)) != 0) {
+        // Disable interrupts for this until the next time
+        // we need them for a wake-up; without this, the interrupt
+        // handler will stay asserted.
+        config &= ~@as(u32, 1 << 1);
+    }
+
+    put32(.AUX_MU_IER_REG, config);
     uart_task.wake();
 }
 
@@ -207,8 +224,6 @@ pub fn log(
 
     uart_task.wake();
     Task.switchToAndSleep(uart_task);
-
-    // uartSpinWrite(output);
 }
 
 fn uartSpinWrite(str: []const u8) void {

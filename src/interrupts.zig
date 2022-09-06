@@ -239,17 +239,22 @@ pub fn unhandledException(
     }
 }
 
-const interval: u32 = 20000;
-pub var time_counter: u32 = 0;
-pub fn initTimer() void {
-    {
+pub fn initInterrupts() void {
+    { // Timer
         const counter_value = mmio.get32(.TIMER_CLO);
         @atomicStore(u32, &time_counter, counter_value, .SeqCst);
         mmio.put32(.TIMER_C1, counter_value + interval);
     }
 
-    mmio.put32(.ENABLE_IRQS_1, mmio.constants.SYSTEM_TIMER_IRQ_1);
+    { //
+    }
+
+    mmio.put32(.ENABLE_IRQS_1, IRQ_FLAGS.AUX_IRQ_1 |
+        IRQ_FLAGS.SYSTEM_TIMER_IRQ_1);
 }
+
+const interval: u32 = 20000;
+pub var time_counter: u32 = 0;
 
 fn handleTimerInterrupt(state: *RegisterState) void {
     _ = state;
@@ -270,19 +275,22 @@ const IRQ_FLAGS = struct {
 
 export fn handleIrq(state: *RegisterState) void {
     const irq = mmio.get32(.IRQ_PENDING_1);
+    const aux_irq = mmio.get32(.AUX_IRQ);
 
-    const uart_status = mmio.get32(.AUX_MU_IIR_REG);
-    if ((uart_status & (1 << 0)) == 0) {
+    if ((irq & IRQ_FLAGS.SYSTEM_TIMER_IRQ_1) != 0) {
+        handleTimerInterrupt(state);
+    }
+
+    if ((aux_irq & 1) != 0) {
         mmio.handleUartInterrupt(state);
     }
 
-    switch (irq) {
-        IRQ_FLAGS.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
+    // switch (irq) {
 
-        else => {
-            const esr = arm.mrs("esr_el1");
-            const elr = arm.mrs("elr_el1");
-            unhandledException(state, "el1_irq", esr, elr);
-        },
-    }
+    //     else => {
+    //         const esr = arm.mrs("esr_el1");
+    //         const elr = arm.mrs("elr_el1");
+    //         unhandledException(state, "el1_irq", esr, elr);
+    //     },
+    // }
 }

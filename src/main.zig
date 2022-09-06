@@ -66,7 +66,7 @@ export fn main() callconv(.C) noreturn {
 
     // This doesn't work when these two are moved around; something's
     // obviously wrong but I have no idea what.
-    interrupts.initTimer();
+    interrupts.initInterrupts();
     interrupts.enableIrqs();
 
     const page = memory.allocPages(1, false) catch unreachable;
