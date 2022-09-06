@@ -60,9 +60,9 @@ export fn main() callconv(.C) noreturn {
 
     scheduler.init();
 
-    mmio.init();
-
     memory.initAllocator();
+
+    mmio.init();
 
     // This doesn't work when these two are moved around; something's
     // obviously wrong but I have no idea what.

@@ -88,46 +88,92 @@ pub fn init() void {
     put32(.AUX_ENABLES, 1); //Enable mini uart (this also enables access to its registers)
     put32(.AUX_MU_CNTL_REG, 0); //Disable auto flow control and disable receiver and transmitter (for now)
 
-    put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
-    // put32(.AUX_MU_IER_REG, 1 << 1); // Enable transmit interrupts
+    put32(.AUX_MU_IER_REG, 1 << 1); // Enable transmit interrupts
 
     put32(.AUX_MU_LCR_REG, 3); //Enable 8 bit mode
     put32(.AUX_MU_MCR_REG, 0); //Set RTS line to be always high
     put32(.AUX_MU_BAUD_REG, 270); //Set baud rate to 115200
 
     put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
+
+    uart_task = Task.init(uartTask, 0) catch unreachable;
+    queue_head.str = "";
+    queue_head.task = uart_task;
+    queue_tail = &queue_head;
 }
 
 const Node = struct {
-    next: ?*const @This() = null,
+    next: ?*@This() = null,
     str: []const u8,
     task: scheduler.Task,
 };
 
-var queue_head: Node = .{
-    .str = "",
-    .task = undefined,
-};
-var queue_tail: *Node = &queue_head;
+var uart_task: Task = undefined;
+var queue_head: Node = .{ .str = undefined, .task = undefined };
+var queue_tail: *Node = undefined;
 
-pub fn uartInterruptHandler(state: *interrupts.RegisterState) void {
-    _ = state;
+pub fn uartTask(_: u64) callconv(.C) void {
+    const q_head = &queue_head;
+    const q_tail = &queue_tail;
 
-    // Get interrupt status (page 13 of peripherals manual)
-    const interrupt_status = get32(.AUX_MU_IIR_REG) & (1 << 1);
-    if (interrupt_status == 0) {
-        return;
+    outer: while (true) {
+        for (q_head.str) |c, i| {
+            if ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {
+                q_head.str = q_head.str[i..];
+                Task.sleep();
+
+                continue :outer;
+            }
+
+            put32(.AUX_MU_IO_REG, c);
+        }
+
+        q_head.task.wake();
+
+        const next = @atomicLoad(?*Node, &q_head.next, .SeqCst) orelse {
+            var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+            std.debug.assert(tail == q_head);
+
+            q_head.str = "";
+            q_head.task = uart_task;
+
+            Task.sleep();
+            continue :outer;
+        };
+
+        q_head.str = next.str;
+        q_head.task = next.task;
+
+        if (@atomicLoad(?*Node, &next.next, .SeqCst)) |n| {
+            q_head.next = n;
+            continue :outer;
+        }
+
+        q_head.next = null;
+        const result = @cmpxchgStrong(*Node, q_tail, next, q_head, .SeqCst, .SeqCst);
+        if (result == null) {
+            continue :outer;
+        }
+
+        while (true) {
+            if (@atomicLoad(?*Node, &next.next, .SeqCst)) |n| {
+                q_head.next = n;
+                continue :outer;
+            }
+        }
     }
+}
 
+pub fn handleUartInterrupt(state: *interrupts.RegisterState) void {
     scheduler.preemptDisable();
     defer scheduler.preemptEnable();
 
-    while ((get32(.AUX_MU_LSR_REG) & 0x20) != 0) {
-        put32(.AUX_MU_IO_REG, 'H');
-    }
+    _ = state;
 
     // Clear the transmit interrupt (page 13 of peripherals manual)
     put32(.AUX_MU_IIR_REG, 1 << 2);
+
+    uart_task.wake();
 }
 
 pub fn log(
@@ -147,17 +193,22 @@ pub fn log(
         panic("Log failed, message too long", null);
     };
 
-    // const q_tail = &queue_tail;
+    if (output.len == 0) return;
 
-    // var node = Node{ .task = scheduler.Task.current(), .str = output };
-    // var tail = @atomicLoad(*Node, q_tail, .SeqCst);
-    // while (@cmpxchgWeak(*Node, q_tail, tail, &node, .SeqCst, .SeqCst)) |new| {
-    //     tail = new;
-    // }
+    const q_tail = &queue_tail;
 
-    // @atomicStore(?*const Node, &tail.next, &node, .SeqCst);
+    var node = Node{ .task = scheduler.Task.current(), .str = output };
+    var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+    while (@cmpxchgWeak(*Node, q_tail, tail, &node, .SeqCst, .SeqCst)) |new| {
+        tail = new;
+    }
 
-    uartSpinWrite(output);
+    @atomicStore(?*const Node, &tail.next, &node, .SeqCst);
+
+    uart_task.wake();
+    Task.switchToAndSleep(uart_task);
+
+    // uartSpinWrite(output);
 }
 
 fn uartSpinWrite(str: []const u8) void {
@@ -176,7 +227,9 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
     scheduler.preemptDisable();
 
+    put32(.AUX_MU_CNTL_REG, 0); //Disable auto flow control and disable receiver and transmitter (for now)
     put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
+    put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
 
     uartSpinWrite("PANICKED: ");
     uartSpinWrite(msg);

@@ -231,7 +231,7 @@ pub fn initAllocator() void {
     const begin = @ptrCast([*]align(4096) u8, @alignCast(4096, &__bss_end));
     const end = mmio.MMIO_BASE;
     const page_count = (end - @ptrToInt(begin)) / 4096;
-    releasePages(begin, @intCast(u32, page_count));
+    releasePagesImpl(begin, @intCast(u32, page_count));
 }
 
 fn buddyInfo(page: u64, class: u6) BuddyInfo {
@@ -372,7 +372,7 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
     return buf;
 }
 
-pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
+fn releasePagesImpl(data: [*]align(4096) u8, count: u32) void {
     scheduler.preemptDisable();
     defer scheduler.preemptEnable();
 
@@ -411,7 +411,11 @@ pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
         addToFreelist(page, class_count - 1);
     }
 
-    std.log.info("freed {*}..{*}", .{ data, data + count * 4096 });
     free_memory += count * 4096;
     // BitSet__set_range(MemGlobals.free_pages, begin, end, true);
+}
+
+pub fn releasePages(data: [*]align(4096) u8, count: u32) void {
+    releasePagesImpl(data, count);
+    std.log.info("freed {*}..{*}", .{ data, data + count * 4096 });
 }

@@ -265,13 +265,19 @@ fn handleTimerInterrupt(state: *RegisterState) void {
 // Page 113 of peripherals manual
 const IRQ_FLAGS = struct {
     const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
+    const AUX_IRQ_1: u32 = 1 << 29;
 };
 
 export fn handleIrq(state: *RegisterState) void {
     const irq = mmio.get32(.IRQ_PENDING_1);
 
+    const uart_status = mmio.get32(.AUX_MU_IIR_REG);
+    if ((uart_status & (1 << 0)) == 0) {
+        mmio.handleUartInterrupt(state);
+    }
+
     switch (irq) {
-        mmio.constants.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
+        IRQ_FLAGS.SYSTEM_TIMER_IRQ_1 => handleTimerInterrupt(state),
 
         else => {
             const esr = arm.mrs("esr_el1");

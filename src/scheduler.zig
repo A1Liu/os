@@ -66,7 +66,7 @@ pub const Task = struct {
     }
 
     pub fn sleep() void {
-        current_task.status = .waiting;
+        current_task.state = .waiting;
         current_task.counter = 0;
         scheduleImpl();
     }
@@ -77,30 +77,32 @@ pub const Task = struct {
     }
 
     pub fn wake(self: Self) void {
-        tasks.slice()[self.id].state = .running;
+        const task_info = tasks.slice()[self.id] orelse return;
+        task_info.state = .running;
     }
 
     pub fn switchToAndSleep(self: Self) void {
         if (self.id == current_task.id) return;
 
         preemptDisable();
+        defer preemptEnable();
 
-        current_task.status = .waiting;
+        current_task.state = .waiting;
         current_task.counter = 0;
-        tasks.slice()[self.id].switchTo();
 
-        preemptEnable();
+        const task_info = tasks.slice()[self.id] orelse return;
+        task_info.switchToUnsafe();
     }
 
     pub fn switchTo(self: Self) void {
         if (self.id == current_task.id) return;
 
         preemptDisable();
+        defer preemptEnable();
 
         current_task.counter = 0;
-        tasks.slice()[self.id].switchTo();
-
-        preemptEnable();
+        const task_info = tasks.slice()[self.id] orelse return;
+        task_info.switchToUnsafe();
     }
 };
 
