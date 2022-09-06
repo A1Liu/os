@@ -69,7 +69,20 @@ pub const Task = struct {
         tasks.slice()[self.id].state = .running;
     }
 
+    pub fn switchToAndSleep(self: Self) void {
+        if (self.id == current_task.id) return;
+
+        preemptDisable();
+
+        tasks.slice()[current_task.id].status = .waiting;
+        tasks.slice()[self.id].switchTo();
+
+        preemptEnable();
+    }
+
     pub fn switchTo(self: Self) void {
+        if (self.id == current_task.id) return;
+
         preemptDisable();
 
         tasks.slice()[self.id].switchTo();
