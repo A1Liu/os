@@ -105,6 +105,39 @@ pub fn uartWrite(str: []const u8) void {
     }
 }
 
+pub fn log(
+    comptime message_level: std.log.Level,
+    comptime scope: @Type(.EnumLiteral),
+    comptime fmt: []const u8,
+    args: anytype,
+) void {
+    _ = scope;
+    _ = message_level;
+
+    var buf: [256]u8 = undefined;
+    const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
+        panic("Log failed, message too long", null);
+    };
+
+    uartWrite(output);
+}
+
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
+    @setCold(true);
+
+    _ = error_return_trace;
+
+    put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
+
+    uartWrite("PANICKED: ");
+    uartWrite(msg);
+    uartWrite("\n");
+
+    while (true) {
+        asm volatile ("nop");
+    }
+}
+
 pub fn uartInterruptHandler(state: *interrupts.RegisterState) void {
     _ = state;
 
