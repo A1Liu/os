@@ -27,13 +27,13 @@ const CpuContext = extern struct {
     pc: u64,
 };
 
-extern fn ret_from_fork() void;
-extern fn cpu_switch_to(prev: *TaskInfo, next: *TaskInfo) callconv(.C) void;
-
 pub const Task = struct {
+    // TODO: eventually make IDs u64 or something, idk
     id: u8,
 
-    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !@This() {
+    const Self = @This();
+
+    pub fn init(task_fn: fn (arg: u64) callconv(.C) void, arg: u64) !Self {
         preemptDisable();
         defer preemptEnable();
 
@@ -54,9 +54,21 @@ pub const Task = struct {
 
         try tasks.append(task);
 
-        return @This(){
+        return Self{
             .id = task.id,
         };
+    }
+
+    pub fn wake(self: Self) void {
+        tasks.slice()[self.id].state = .running;
+    }
+
+    pub fn switchTo(self: Self) void {
+        preemptDisable();
+
+        tasks.slice()[self.id].switchTo();
+
+        preemptEnable();
     }
 };
 
@@ -68,6 +80,16 @@ const TaskInfo = extern struct {
     preempt_count: u32,
     counter: u64,
     priority: u64,
+
+    // This requires preempts to already be disabled
+    fn switchToUnsafe(next: *TaskInfo) callconv(.C) void {
+        if (current == next) return;
+
+        const prev = current;
+        current = next;
+
+        cpu_switch_to(prev, next);
+    }
 };
 
 var tasks: std.BoundedArray(?*TaskInfo, 256) = .{};
@@ -96,16 +118,16 @@ var init_task = TaskInfo{
     },
 };
 
+pub fn init() void {
+    tasks.append(current) catch unreachable;
+}
+
 pub fn preemptEnable() void {
     current.preempt_count -= 1;
 }
 
 pub fn preemptDisable() void {
     current.preempt_count += 1;
-}
-
-export fn schedule_tail() callconv(.C) void {
-    preemptEnable();
 }
 
 pub fn schedule() void {
@@ -142,7 +164,7 @@ fn scheduleImpl() void {
         unreachable;
     };
 
-    switchTo(task);
+    task.switchToUnsafe();
 
     preemptEnable();
 }
@@ -163,14 +185,8 @@ pub fn timerTick() void {
     interrupts.disableIrqs();
 }
 
-fn switchTo(next: *TaskInfo) callconv(.C) void {
-    if (current == next) return;
-
-    const prev = current;
-    current = next;
-
-    cpu_switch_to(prev, next);
-}
+extern fn ret_from_fork() void;
+extern fn cpu_switch_to(prev: *TaskInfo, next: *TaskInfo) callconv(.C) void;
 
 comptime {
     asm ("" ++
@@ -207,6 +223,6 @@ comptime {
     );
 }
 
-pub fn init() void {
-    tasks.append(current) catch unreachable;
+export fn schedule_tail() callconv(.C) void {
+    preemptEnable();
 }
