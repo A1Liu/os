@@ -5,6 +5,8 @@ const arm = os.arm;
 const interrupts = os.interrupts;
 const scheduler = os.scheduler;
 
+const Task = scheduler.Task;
+
 pub const constants = struct {
     pub const SYSTEM_TIMER_IRQ_1: u32 = 1 << 1;
 
@@ -96,6 +98,18 @@ pub fn init() void {
     put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
 }
 
+const Node = struct {
+    next: ?*const @This() = null,
+    str: []const u8,
+    task: scheduler.Task,
+};
+
+var queue_head: Node = .{
+    .str = "",
+    .task = undefined,
+};
+var queue_tail: *Node = &queue_head;
+
 pub fn uartInterruptHandler(state: *interrupts.RegisterState) void {
     _ = state;
 
@@ -132,6 +146,16 @@ pub fn log(
     const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
         panic("Log failed, message too long", null);
     };
+
+    // const q_tail = &queue_tail;
+
+    // var node = Node{ .task = scheduler.Task.current(), .str = output };
+    // var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+    // while (@cmpxchgWeak(*Node, q_tail, tail, &node, .SeqCst, .SeqCst)) |new| {
+    //     tail = new;
+    // }
+
+    // @atomicStore(?*const Node, &tail.next, &node, .SeqCst);
 
     uartSpinWrite(output);
 }

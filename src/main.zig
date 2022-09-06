@@ -21,6 +21,8 @@ pub const have_error_return_tracing = false;
 pub const log = mmio.log;
 pub const panic = mmio.panic;
 
+const Task = scheduler.Task;
+
 fn printTask2(interval: u64) callconv(.C) void {
     var timer_value: u32 = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
     while (true) {
@@ -32,7 +34,7 @@ fn printTask2(interval: u64) callconv(.C) void {
             std.log.info("- Mimer: {}", .{value});
         }
 
-        scheduler.schedule();
+        Task.stopForNow();
     }
 }
 
@@ -47,7 +49,7 @@ fn printTask(interval: u64) callconv(.C) void {
             std.log.info("  Timer: {}", .{value});
         }
 
-        scheduler.schedule();
+        Task.stopForNow();
     }
 }
 
@@ -100,11 +102,10 @@ export fn main() callconv(.C) noreturn {
         \\
     , .{});
 
-    _ = scheduler.Task.init(printTask, 200000) catch unreachable;
-    _ = scheduler.Task.init(printTask2, 100000) catch unreachable;
+    _ = Task.init(printTask, 200000) catch unreachable;
+    _ = Task.init(printTask2, 100000) catch unreachable;
 
     while (true) {
-        // std.log.info("hello\n", .{});
-        scheduler.schedule();
+        Task.stopForNow();
     }
 }

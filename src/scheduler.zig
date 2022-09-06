@@ -65,6 +65,17 @@ pub const Task = struct {
         };
     }
 
+    pub fn sleep() void {
+        current_task.status = .waiting;
+        current_task.counter = 0;
+        scheduleImpl();
+    }
+
+    pub fn stopForNow() void {
+        current_task.counter = 0;
+        scheduleImpl();
+    }
+
     pub fn wake(self: Self) void {
         tasks.slice()[self.id].state = .running;
     }
@@ -74,7 +85,8 @@ pub const Task = struct {
 
         preemptDisable();
 
-        tasks.slice()[current_task.id].status = .waiting;
+        current_task.status = .waiting;
+        current_task.counter = 0;
         tasks.slice()[self.id].switchTo();
 
         preemptEnable();
@@ -85,6 +97,7 @@ pub const Task = struct {
 
         preemptDisable();
 
+        current_task.counter = 0;
         tasks.slice()[self.id].switchTo();
 
         preemptEnable();
@@ -147,11 +160,6 @@ pub fn preemptEnable() void {
 
 pub fn preemptDisable() void {
     current_task.preempt_count += 1;
-}
-
-pub fn schedule() void {
-    current_task.counter = 0;
-    scheduleImpl();
 }
 
 fn scheduleImpl() void {
