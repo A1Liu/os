@@ -96,7 +96,7 @@ pub fn init() void {
     put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
 }
 
-pub fn uartWrite(str: []const u8) void {
+pub fn uartSpinWrite(str: []const u8) void {
     for (str) |c| {
         // Wait for UART to become ready to transmit.
         while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}
@@ -119,7 +119,7 @@ pub fn log(
         panic("Log failed, message too long", null);
     };
 
-    uartWrite(output);
+    uartSpinWrite(output);
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
@@ -129,9 +129,9 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
     put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
 
-    uartWrite("PANICKED: ");
-    uartWrite(msg);
-    uartWrite("\n");
+    uartSpinWrite("PANICKED: ");
+    uartSpinWrite(msg);
+    uartSpinWrite("\n");
 
     while (true) {
         asm volatile ("nop");
