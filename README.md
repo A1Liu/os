@@ -59,7 +59,7 @@ Linker Script           | `src/link.ld`
 
 ## To Do
 - Page mapping utilities
-- interrupt-based mini-uart handler
+- Receive data from UART
 - syscalls
 - frame buffer
 - user-space executables
