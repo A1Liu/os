@@ -33,13 +33,8 @@ pub fn build(b: *Builder) void {
         kernel.setTarget(target);
 
         kernel.setBuildMode(mode);
-        // kernel.setBuildMode(.ReleaseSafe);
 
         kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
-
-        // kernel.force_pic = true;
-
-        // kernel.strip = true;
 
         kernel.install();
 
@@ -98,14 +93,14 @@ pub fn build(b: *Builder) void {
 
             \\The GDB Server will open on localhost:1234 .
             \\
-            \\Open in VS Code:
-            \\  vscode://vadimcn.vscode-lldb/launch?name=Remote%20Attach
-            \\
-            \\Or you can debug directly with LLDB:
+            \\Open with LLDB:
             \\  lldb zig-out/bin/kernel.elf
             \\
-            \\To attach to the server, once you're in LLDB, you can use:
+            \\Then, attach to the server:
             \\  gdb-remote localhost:1234
+            \\
+            \\Or you can open in VS Code (may not actually work):
+            \\  vscode://vadimcn.vscode-lldb/launch?name=Remote%20Attach
         };
 
         const info_cmd = b.addSystemCommand(info_cmd_str);
