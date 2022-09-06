@@ -153,18 +153,22 @@ pub fn uartTask(_: u64) callconv(.C) void {
         q_head.str = next.str;
         q_head.task = next.task;
 
-        if (@atomicLoad(?*Node, &next.next, .SeqCst)) |n| {
-            q_head.next = n;
-            continue :outer;
-        }
-
+        // Publish an initial null value for `next`, because after the next
+        // statement, the head might be published to everyone, and setting the
+        // `next` field then could cause a race condition.
         q_head.next = null;
-        const result = @cmpxchgStrong(*Node, q_tail, next, q_head, .SeqCst, .SeqCst);
-        if (result == null) {
-            continue :outer;
-        }
 
-        while (true) {
+        // We try to re-set the tail, expecting that the `next` is the last
+        // element.
+        //
+        // If it fails due to the expected value being incorrect,
+        // we can just move on.
+        const res = @cmpxchgStrong(*Node, q_tail, next, q_head, .SeqCst, .SeqCst);
+
+        // Try to read atomically from the `next.next` value to get the
+        // actual next we should be using. It might not be populated yet,
+        // so we need to busy-loop here.
+        while (res != null) {
             if (@atomicLoad(?*Node, &next.next, .SeqCst)) |n| {
                 q_head.next = n;
                 continue :outer;
