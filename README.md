@@ -28,6 +28,7 @@
 
 ## Useful Resources
 - Pi 3 Tutorial - https://github.com/s-matyukevich/raspberry-pi-os
+- Another Pi 3 Tutorial - https://github.com/bztsrc/raspi3-tutorial/
 - Aarch64 Calling Convention - https://hev.cc/3052.html
 - Aarch64 barriers - https://developer.arm.com/documentation/100941/0101/Barriers
 - Aarch64 shareability - https://developer.arm.com/documentation/den0024/a/Memory-Ordering/Memory-attributes/Cacheable-and-shareable-memory-attributes
@@ -60,8 +61,8 @@ Linker Script           | `src/link.ld`
 ## To Do
 - Page mapping utilities
 - Receive data from UART
-- syscalls
 - frame buffer
-- user-space executables
 - FAT32 handler
+- syscalls and user-space executables
 - Debug stuffs
+- Remove identity mapping
