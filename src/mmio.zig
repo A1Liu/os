@@ -122,6 +122,9 @@ pub fn log(
     comptime fmt: []const u8,
     args: anytype,
 ) void {
+    scheduler.preemptDisable();
+    defer scheduler.preemptEnable();
+
     _ = scope;
     _ = message_level;
 
@@ -146,6 +149,8 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
     @setCold(true);
 
     _ = error_return_trace;
+
+    scheduler.preemptDisable();
 
     put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
 
