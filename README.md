@@ -64,12 +64,17 @@ Frame Buffer            | `src/framebuffer.zig`
 Mailboxes               | `src/mmio.zig`
 
 ## To Do
-- Page mapping utilities
-- switch from mini-uart to uart
-- Receive data from UART
-- handle GPU memory addresses in the allocator
-- safety checks in allocator
-- FAT32 handler
-- syscalls and user-space executables
-- Debug stuffs
-- Remove identity mapping
+- Safety
+  - Fix timer overflow
+- Allocator
+  - safety checks in allocator
+  - handle GPU memory addresses in the allocator
+- Debugging
+  - switch from mini-uart to uart
+  - receive data from UART
+  - debug stuffs
+- Userspace Exe
+  - remove identity mapping
+  - FAT32 handler
+  - syscalls and user-space executables
+  - page mapping utilities
