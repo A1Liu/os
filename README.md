@@ -71,10 +71,11 @@ Mailboxes               | `src/mmio.zig`
   - handle GPU memory addresses in the allocator
 - Debugging
   - switch from mini-uart to uart
-  - receive data from UART
-  - debug stuffs
+  - receive data in UART
+  - Debug shell
 - Userspace Exe
   - remove identity mapping
   - FAT32 handler
   - syscalls and user-space executables
   - page mapping utilities
+  - IPC queue?
