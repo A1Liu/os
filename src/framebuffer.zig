@@ -9,39 +9,10 @@ pub var width: u32 = undefined;
 pub var height: u32 = undefined;
 pub var buffer: []align(4096) volatile u8 = undefined;
 
-var mbox: [36]u32 align(16) = undefined;
-
-const MBOX_REQUEST: u32 = 0;
-const MBOX_TAG_LAST: u32 = 0;
-const MBOX_RESPONSE: u32 = 0x80000000;
-const MBOX_FULL: u32 = 0x80000000;
-const MBOX_EMPTY: u32 = 0x40000000;
-
-const MBOX_CH_PROP = 8;
-
-fn mboxCall(call: u4) bool {
-    const mask = ~@as(u32, 0xF);
-    const r = @intCast(u32, mem.physicalAddress(&mbox) & mask) | call;
-
-    while (mmio.get32(.MBOX_STATUS) & MBOX_FULL != 0) {
-        asm volatile ("nop");
-    }
-
-    mmio.put32(.MBOX_WRITE, r);
-
-    while (true) {
-        while (mmio.get32(.MBOX_STATUS) & MBOX_EMPTY != 0) {
-            asm volatile ("nop");
-        }
-
-        if (r == mmio.get32(.MBOX_READ))
-            return mbox[1] == MBOX_RESPONSE;
-    }
-}
-
+const mbox = mmio.mbox;
 pub fn init() !void {
     mbox[0] = 35 * 4;
-    mbox[1] = MBOX_REQUEST;
+    mbox[1] = mmio.MBOX.REQUEST;
 
     mbox[2] = 0x48003; //set phy wh
     mbox[3] = 8;
@@ -82,12 +53,12 @@ pub fn init() !void {
     mbox[32] = 4;
     mbox[33] = 0; //FrameBufferInfo.pitch
 
-    mbox[34] = MBOX_TAG_LAST;
+    mbox[34] = mmio.MBOX.TAG_LAST;
 
     //this might not return exactly what we asked for, could be
     //the closest supported resolution instead
 
-    const call = mboxCall(MBOX_CH_PROP);
+    const call = mmio.mboxSpinCall(mmio.MBOX.CH_PROP);
     const success = call and mbox[20] == 32 and mbox[28] != 0;
 
     buffer = &.{};

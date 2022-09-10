@@ -4,6 +4,7 @@ const std = @import("std");
 const arm = os.arm;
 const interrupts = os.interrupts;
 const scheduler = os.scheduler;
+const mem = os.memory;
 
 const Task = scheduler.Task;
 
@@ -270,5 +271,40 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
     while (true) {
         asm volatile ("nop");
+    }
+}
+
+var mbox_: [36]u32 align(16) = undefined;
+pub const mbox: *align(16) volatile [36]u32 = &mbox_;
+
+pub const MBOX = struct {
+    pub const REQUEST: u32 = 0;
+    pub const TAG_LAST: u32 = 0;
+    pub const RESPONSE: u32 = 0x80000000;
+    pub const FULL: u32 = 0x80000000;
+    pub const EMPTY: u32 = 0x40000000;
+
+    pub const CH_PROP = 8;
+
+    pub const BUS_ADDRESS_MASK = ~@as(u32, 0xC0000000);
+};
+
+pub fn mboxSpinCall(call: u4) bool {
+    const mask = ~@as(u32, 0xF);
+    const r = @intCast(u32, mem.physicalAddress(mbox) & mask) | call;
+
+    while (get32(.MBOX_STATUS) & MBOX.FULL != 0) {
+        asm volatile ("nop");
+    }
+
+    put32(.MBOX_WRITE, r);
+
+    while (true) {
+        while (get32(.MBOX_STATUS) & MBOX.EMPTY != 0) {
+            asm volatile ("nop");
+        }
+
+        if (r == get32(.MBOX_READ))
+            return mbox[1] == MBOX.RESPONSE;
     }
 }
