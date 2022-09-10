@@ -13,7 +13,6 @@ pub const constants = struct {
     pub const TIMER_CS_M1: u32 = 1 << 1;
 };
 
-// pub const VIDEOCORE_BASE : u64 =
 pub const MMIO_BASE: u64 = 0xFFFF00003F000000;
 const MBOX_BASE = MMIO_BASE + 0x0000B880;
 const GPIO_BASE = MMIO_BASE + 0x200000;

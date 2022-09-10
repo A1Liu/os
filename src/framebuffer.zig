@@ -96,7 +96,17 @@ pub fn init() !void {
     // check the actual channel order
     if (mbox[24] == 0) return error.NotRGB;
 
-    mbox[28] &= 0x3FFFFFFF; //convert GPU address to ARM address
+    // Not quite sure I understand this one...
+    //
+    // this is the logic mentioned by the RPi forum post:
+    //      https://forums.raspberrypi.com/viewtopic.php?t=155825
+    // and also equivalent to code found in a Raspberry Pi 3b+ tutorial:
+    //      https://github.com/bztsrc/raspi3-tutorial/blob/master/09_framebuffer/lfb.c
+    //
+    //                                      - Albert Liu, Sep 10, 2022 Sat 00:14 EDT
+    const bus_address_mask: u32 = 0xC0000000;
+    mbox[28] &= ~bus_address_mask; //convert GPU address to ARM address
+
     width = mbox[5]; //get actual physical width
     height = mbox[6]; //get actual physical height
     pitch = mbox[33]; //get number of bytes per line
