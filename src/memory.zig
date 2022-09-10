@@ -145,7 +145,7 @@ pub fn initProtections() void {
 // algorithm.
 
 const virtual_base: u64 = 0xffff000000000000;
-inline fn physicalAddress(ptr: anytype) u64 {
+pub inline fn physicalAddress(ptr: anytype) u64 {
     const a = @ptrToInt(ptr);
     return a - virtual_base;
 }

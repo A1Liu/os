@@ -13,6 +13,7 @@ pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
 pub const scheduler = @import("./scheduler.zig");
 pub const datastruct = @import("./datastruct.zig");
+pub const framebuffer = @import("./framebuffer.zig");
 
 pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;
@@ -59,6 +60,8 @@ export fn main() callconv(.C) noreturn {
     interrupts.initVectors();
 
     scheduler.init();
+
+    framebuffer.init();
 
     memory.initAllocator();
 
