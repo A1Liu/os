@@ -61,7 +61,7 @@ export fn main() callconv(.C) noreturn {
 
     scheduler.init();
 
-    framebuffer.init();
+    const fb_result = framebuffer.init();
 
     memory.initAllocator();
 
@@ -71,6 +71,14 @@ export fn main() callconv(.C) noreturn {
     // obviously wrong but I have no idea what.
     interrupts.initInterrupts();
     interrupts.enableIrqs();
+
+    if (fb_result) {
+        std.log.info("framebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
+        std.log.info("len={}", .{framebuffer.buffer.len});
+        std.log.info("pitch={}", .{framebuffer.pitch});
+    } else |_| {
+        std.log.info("framebuffer init failed", .{});
+    }
 
     const page = memory.allocPages(1, false) catch unreachable;
     std.debug.assert(page.len == 4096);
@@ -95,6 +103,9 @@ export fn main() callconv(.C) noreturn {
 
     // std.log.info("bss value: {*}", .{globals});
 
+    _ = Task.init(printTask, 200000) catch unreachable;
+    _ = Task.init(printTask2, 100000) catch unreachable;
+
     std.log.info(
         \\
         \\-----------------------------------------
@@ -104,9 +115,6 @@ export fn main() callconv(.C) noreturn {
         \\-----------------------------------------
         \\
     , .{});
-
-    _ = Task.init(printTask, 200000) catch unreachable;
-    _ = Task.init(printTask2, 100000) catch unreachable;
 
     while (true) {
         Task.stopForNow();

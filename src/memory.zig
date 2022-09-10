@@ -150,8 +150,8 @@ pub inline fn physicalAddress(ptr: anytype) u64 {
     return a - virtual_base;
 }
 
-inline fn kernelPtr(comptime T: type, address: u64) *T {
-    return @intToPtr(*T, address + virtual_base);
+pub inline fn kernelPtr(comptime T: type, address: u64) T {
+    return @intToPtr(T, address + virtual_base);
 }
 
 const class_count = 12;
@@ -246,7 +246,7 @@ fn buddyInfo(page: u64, class: u6) BuddyInfo {
 fn addToFreelist(page: u64, class: u64) void {
     // assert(is_aligned(page, 1 << class));
 
-    const block = kernelPtr(FreeBlock, page * 4096);
+    const block = kernelPtr(*FreeBlock, page * 4096);
     const info = &classes[class];
 
     block.class = class;
@@ -264,7 +264,7 @@ fn removeFromFreelist(page: u64, class: u64) void {
     // assert(class < CLASS_COUNT);
     // assert(is_aligned(page, 1 << class));
 
-    const block = kernelPtr(FreeBlock, page * 4096);
+    const block = kernelPtr(*FreeBlock, page * 4096);
     const info = &classes[class];
 
     if (block.next) |next| next.prev = block.prev;
