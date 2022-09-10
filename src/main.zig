@@ -58,7 +58,7 @@ fn printTask(interval: u64) callconv(.C) void {
         std.log.info("  Timer: {}", .{value});
 
         defer i += 1;
-        if (i == 48) {
+        if (i >= 48) {
             i = 0;
             up = !up;
         }
