@@ -30,12 +30,13 @@ fn printTask2(interval: u64) callconv(.C) void {
         asm volatile ("nop");
 
         const value = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
-        if (value - timer_value > interval) {
-            timer_value = value;
-            std.log.info("- Mimer: {}", .{value});
+        if (value - timer_value <= interval) {
+            Task.stopForNow();
+            continue;
         }
 
-        Task.stopForNow();
+        timer_value = value;
+        std.log.info("- Mimer: {}", .{value});
     }
 }
 
@@ -44,14 +45,17 @@ fn printTask(interval: u64) callconv(.C) void {
 
     var up: bool = true;
     var i: u32 = 0;
-    while (true) : (i += 1) {
+    while (true) {
         asm volatile ("nop");
 
         const value = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
-        if (value - timer_value > interval) {
-            timer_value = value;
-            std.log.info("  Timer: {}", .{value});
+        if (value - timer_value <= interval) {
+            Task.stopForNow();
+            continue;
         }
+
+        timer_value = value;
+        std.log.info("  Timer: {}", .{value});
 
         if (i == 128) {
             i = 0;
@@ -59,6 +63,8 @@ fn printTask(interval: u64) callconv(.C) void {
         }
 
         const a = i / 32;
+        i += 1;
+
         if (a != 3) {
             var row: u32 = 0;
             while (row < framebuffer.height) : (row += 1) {
@@ -75,8 +81,6 @@ fn printTask(interval: u64) callconv(.C) void {
                 }
             }
         }
-
-        Task.stopForNow();
     }
 }
 
