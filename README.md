@@ -63,7 +63,8 @@ Linker Script           | `src/link.ld`
 ## To Do
 - Page mapping utilities
 - Receive data from UART
-- handle GPU memory in the allocator
+- handle GPU memory addresses in the allocator
+- safety checks in allocator
 - FAT32 handler
 - syscalls and user-space executables
 - Debug stuffs
