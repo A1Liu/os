@@ -57,27 +57,25 @@ fn printTask(interval: u64) callconv(.C) void {
         timer_value = value;
         std.log.info("  Timer: {}", .{value});
 
-        if (i == 128) {
+        defer i += 1;
+        if (i == 48) {
             i = 0;
             up = !up;
         }
 
-        const a = i / 32;
-        i += 1;
+        const a = i / 16;
 
-        if (a != 3) {
-            var row: u32 = 0;
-            while (row < framebuffer.height) : (row += 1) {
-                var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
-                var col: u32 = 0;
-                while (col < framebuffer.width) : (col += 1) {
-                    const pix_data = row_data[(col * 4)..][0..4];
+        var row: u32 = 0;
+        while (row < framebuffer.height) : (row += 1) {
+            var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
+            var col: u32 = 0;
+            while (col < framebuffer.width) : (col += 1) {
+                const pix_data = row_data[(col * 4)..][0..4];
 
-                    if (up) {
-                        pix_data[a] +|= 8;
-                    } else {
-                        pix_data[a] -|= 8;
-                    }
+                if (up) {
+                    pix_data[a] +|= 16;
+                } else {
+                    pix_data[a] -|= 16;
                 }
             }
         }
