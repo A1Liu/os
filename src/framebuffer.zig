@@ -9,7 +9,7 @@ pub var width: u32 = undefined;
 pub var height: u32 = undefined;
 pub var buffer: []align(4096) volatile u8 = undefined;
 
-const mbox = mmio.mbox;
+const mbox = mmio.MBOX.mbox;
 pub fn init() !void {
     mbox[0] = 35 * 4;
     mbox[1] = mmio.MBOX.REQUEST;
@@ -58,7 +58,7 @@ pub fn init() !void {
     //this might not return exactly what we asked for, could be
     //the closest supported resolution instead
 
-    const call = mmio.mboxSpinCall(mmio.MBOX.CH_PROP);
+    const call = mmio.MBOX.spinCall(mmio.MBOX.CH_PROP);
     const success = call and mbox[20] == 32 and mbox[28] != 0;
 
     buffer = &.{};

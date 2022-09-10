@@ -274,9 +274,6 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
     }
 }
 
-var mbox_: [36]u32 align(16) = undefined;
-pub const mbox: *align(16) volatile [36]u32 = &mbox_;
-
 pub const MBOX = struct {
     pub const REQUEST: u32 = 0;
     pub const TAG_LAST: u32 = 0;
@@ -287,24 +284,27 @@ pub const MBOX = struct {
     pub const CH_PROP = 8;
 
     pub const BUS_ADDRESS_MASK = ~@as(u32, 0xC0000000);
-};
 
-pub fn mboxSpinCall(call: u4) bool {
-    const mask = ~@as(u32, 0xF);
-    const r = @intCast(u32, mem.physicalAddress(mbox) & mask) | call;
+    var mbox_: [36]u32 align(16) = undefined;
+    pub const mbox: *align(16) volatile [36]u32 = &mbox_;
 
-    while (get32(.MBOX_STATUS) & MBOX.FULL != 0) {
-        asm volatile ("nop");
-    }
+    pub fn spinCall(call: u4) bool {
+        const mask = ~@as(u32, 0xF);
+        const r = @intCast(u32, mem.physicalAddress(mbox) & mask) | call;
 
-    put32(.MBOX_WRITE, r);
-
-    while (true) {
-        while (get32(.MBOX_STATUS) & MBOX.EMPTY != 0) {
+        while (get32(.MBOX_STATUS) & MBOX.FULL != 0) {
             asm volatile ("nop");
         }
 
-        if (r == get32(.MBOX_READ))
-            return mbox[1] == MBOX.RESPONSE;
+        put32(.MBOX_WRITE, r);
+
+        while (true) {
+            while (get32(.MBOX_STATUS) & MBOX.EMPTY != 0) {
+                asm volatile ("nop");
+            }
+
+            if (r == get32(.MBOX_READ))
+                return mbox[1] == MBOX.RESPONSE;
+        }
     }
-}
+};
