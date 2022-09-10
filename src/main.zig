@@ -72,13 +72,30 @@ export fn main() callconv(.C) noreturn {
     interrupts.initInterrupts();
     interrupts.enableIrqs();
 
-    if (fb_result) {
-        std.log.info("framebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
-        std.log.info("len={}", .{framebuffer.buffer.len});
-        std.log.info("pitch={}", .{framebuffer.pitch});
-    } else |_| {
+    fb_result catch {
+        // handle the error after init is done
         std.log.info("framebuffer init failed", .{});
+        unreachable;
+    };
+
+    {
+        var row: u32 = 0;
+        while (row < framebuffer.height) : (row += 1) {
+            var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
+            var col: u32 = 0;
+            while (col < framebuffer.width) : (col += 1) {
+                const pix_data = row_data[(col * 4)..][0..4];
+                pix_data[0] = 255;
+                pix_data[1] = 0;
+                pix_data[2] = 0;
+                pix_data[3] = 255;
+            }
+        }
     }
+
+    std.log.info("framebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
+    std.log.info("ptr={*},len={}", .{ framebuffer.buffer.ptr, framebuffer.buffer.len });
+    std.log.info("pitch={}", .{framebuffer.pitch});
 
     const page = memory.allocPages(1, false) catch unreachable;
     std.debug.assert(page.len == 4096);

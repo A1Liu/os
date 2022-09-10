@@ -4,6 +4,7 @@ const os = @import("root");
 const c = os.c;
 const mmio = os.mmio;
 const scheduler = os.scheduler;
+const framebuffer = os.framebuffer;
 
 const assert = std.debug.assert;
 const BitSet = os.datastruct.BitSet;
@@ -230,6 +231,7 @@ pub fn initAllocator() void {
     // are usable.
     const begin = @ptrCast([*]align(4096) u8, @alignCast(4096, &__bss_end));
     const end = mmio.MMIO_BASE;
+
     const page_count = (end - @ptrToInt(begin)) / 4096;
     releasePagesImpl(begin, @intCast(u32, page_count));
 }

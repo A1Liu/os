@@ -7,8 +7,7 @@ const mem = os.memory;
 pub var pitch: u32 = undefined;
 pub var width: u32 = undefined;
 pub var height: u32 = undefined;
-pub var isrgb: bool = undefined;
-pub var buffer: []align(4096) u8 = undefined;
+pub var buffer: []align(4096) volatile u8 = undefined;
 
 var mbox: [36]u32 align(16) = undefined;
 
@@ -91,13 +90,16 @@ pub fn init() !void {
     const call = mboxCall(MBOX_CH_PROP);
     const success = call and mbox[20] == 32 and mbox[28] != 0;
 
+    buffer = &.{};
     if (!success) return error.FailedFramebufferInit;
+
+    // check the actual channel order
+    if (mbox[24] == 0) return error.NotRGB;
 
     mbox[28] &= 0x3FFFFFFF; //convert GPU address to ARM address
     width = mbox[5]; //get actual physical width
     height = mbox[6]; //get actual physical height
     pitch = mbox[33]; //get number of bytes per line
-    isrgb = mbox[24] != 0; //get the actual channel order
 
     buffer.ptr = mem.kernelPtr([*]align(4096) u8, mbox[28]);
     buffer.len = mbox[29];
