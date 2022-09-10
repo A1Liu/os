@@ -54,12 +54,14 @@ Concept                 | Location
 Boot-up                 | `src/boot.S`
 System Timer            | `src/interrupts.zig`
 Interrupt Vectors       | `src/interrrupts.zig`
+Page Table Init         | `src/boot.S`
 MMU Protections         | `src/memory.zig`
 Page Allocator          | `src/memory.zig`
 Task Scheduler          | `src/scheduler.zig`
 Mini-UART Handler       | `src/mmio.zig`
 Linker Script           | `src/link.ld`
 Frame Buffer            | `src/framebuffer.zig`
+Mailboxes               | `src/mmio.zig`
 
 ## To Do
 - Page mapping utilities
