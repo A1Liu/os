@@ -84,3 +84,17 @@ pub fn init() !void {
     buffer.ptr = mem.kernelPtr([*]align(4096) u8, mbox[28]);
     buffer.len = mbox[29];
 }
+
+pub const Rows = struct {
+    begin: u32 = 0,
+
+    pub fn next(self: *@This()) ?[][4]u8 {
+        if (self.begin >= height) return null;
+        defer self.begin += 1;
+
+        const row_data = buffer[(pitch * self.begin)..];
+        const out = @ptrCast([*][4]u8, row_data.ptr);
+
+        return out[0..width];
+    }
+};

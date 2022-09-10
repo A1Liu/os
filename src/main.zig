@@ -65,13 +65,9 @@ fn printTask(interval: u64) callconv(.C) void {
 
         const a = i / 16;
 
-        var row: u32 = 0;
-        while (row < framebuffer.height) : (row += 1) {
-            var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
-            var col: u32 = 0;
-            while (col < framebuffer.width) : (col += 1) {
-                const pix_data = row_data[(col * 4)..][0..4];
-
+        var rows = framebuffer.Rows{};
+        while (rows.next()) |row| {
+            for (row) |*pix_data| {
                 if (up) {
                     pix_data[a] +|= 16;
                 } else {
@@ -101,13 +97,9 @@ export fn main() callconv(.C) noreturn {
     interrupts.enableIrqs();
 
     {
-        var row: u32 = 0;
-        while (row < framebuffer.height) : (row += 1) {
-            var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
-            var col: u32 = 0;
-            while (col < framebuffer.width) : (col += 1) {
-                const pix_data = row_data[(col * 4)..][0..4];
-
+        var rows = framebuffer.Rows{};
+        while (rows.next()) |row| {
+            for (row) |*pix_data| {
                 pix_data[0] = 0;
                 pix_data[1] = 0;
                 pix_data[2] = 0;
