@@ -246,9 +246,6 @@ pub fn initInterrupts() void {
         mmio.put32(.TIMER_C1, counter_value + interval);
     }
 
-    { //
-    }
-
     mmio.put32(.ENABLE_IRQS_1, IRQ_FLAGS.AUX_IRQ_1 |
         IRQ_FLAGS.SYSTEM_TIMER_IRQ_1);
 }
@@ -284,13 +281,4 @@ export fn handleIrq(state: *RegisterState) void {
     if ((aux_irq & 1) != 0) {
         mmio.handleUartInterrupt(state);
     }
-
-    // switch (irq) {
-
-    //     else => {
-    //         const esr = arm.mrs("esr_el1");
-    //         const elr = arm.mrs("elr_el1");
-    //         unhandledException(state, "el1_irq", esr, elr);
-    //     },
-    // }
 }

@@ -98,12 +98,6 @@ export fn main() callconv(.C) noreturn {
     interrupts.initInterrupts();
     interrupts.enableIrqs();
 
-    fb_result catch {
-        // handle the error after init is done
-        std.log.info("framebuffer init failed", .{});
-        unreachable;
-    };
-
     {
         var row: u32 = 0;
         while (row < framebuffer.height) : (row += 1) {
@@ -119,10 +113,6 @@ export fn main() callconv(.C) noreturn {
             }
         }
     }
-
-    std.log.info("framebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
-    std.log.info("ptr={*},len={}", .{ framebuffer.buffer.ptr, framebuffer.buffer.len });
-    std.log.info("pitch={}", .{framebuffer.pitch});
 
     const page = memory.allocPages(1, false) catch unreachable;
     std.debug.assert(page.len == 4096);
@@ -144,6 +134,16 @@ export fn main() callconv(.C) noreturn {
 
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
+
+    fb_result catch {
+        // handle the error after init is done
+        std.log.info("framebuffer init failed", .{});
+        unreachable;
+    };
+
+    std.log.info("\nframebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
+    std.log.info("  ptr={*},len={}", .{ framebuffer.buffer.ptr, framebuffer.buffer.len });
+    std.log.info("  pitch={}\n", .{framebuffer.pitch});
 
     // std.log.info("bss value: {*}", .{globals});
 
