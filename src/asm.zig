@@ -12,7 +12,7 @@ pub fn readSp() usize {
 }
 
 pub fn mrs(comptime name: []const u8) usize {
-    return asm ("mrs %[reg], " ++ name
+    return asm volatile ("mrs %[reg], " ++ name
         : [reg] "=r" (-> usize),
     );
 }

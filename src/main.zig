@@ -128,9 +128,7 @@ export fn main() callconv(.C) noreturn {
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});
 
-    const el = asm volatile ("mrs %[val], CurrentEL"
-        : [val] "=r" (-> u32),
-    );
+    const el = arm.mrs("CurrentEL");
 
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
