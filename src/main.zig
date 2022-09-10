@@ -7,13 +7,16 @@ pub const memory_size = 1024 * 1024 * 1024;
 pub const c = @cImport({
     @cInclude("shared_values.h");
 });
+
 pub const arm = @import("./asm.zig");
 pub const mmio = @import("./mmio.zig");
 pub const memory = @import("./memory.zig");
 pub const interrupts = @import("./interrupts.zig");
 pub const scheduler = @import("./scheduler.zig");
-pub const datastruct = @import("./datastruct.zig");
 pub const framebuffer = @import("./framebuffer.zig");
+
+const datastruct = @import("./datastruct.zig");
+pub const BitSet = datastruct.BitSet;
 
 pub const log_level: std.log.Level = .info;
 pub const strip_debug_info = true;

@@ -7,7 +7,7 @@ const scheduler = os.scheduler;
 const framebuffer = os.framebuffer;
 
 const assert = std.debug.assert;
-const BitSet = os.datastruct.BitSet;
+const BitSet = os.BitSet;
 
 extern var _start: u8;
 extern var __rodata_start: u8;
