@@ -63,6 +63,7 @@ Frame Buffer            | `src/framebuffer.zig`
 
 ## To Do
 - Page mapping utilities
+- switch from mini-uart to uart
 - Receive data from UART
 - handle GPU memory addresses in the allocator
 - safety checks in allocator
