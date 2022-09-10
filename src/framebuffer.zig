@@ -75,8 +75,7 @@ pub fn init() !void {
     //      https://github.com/bztsrc/raspi3-tutorial/blob/master/09_framebuffer/lfb.c
     //
     //                                      - Albert Liu, Sep 10, 2022 Sat 00:14 EDT
-    const bus_address_mask: u32 = 0xC0000000;
-    mbox[28] &= ~bus_address_mask; //convert GPU address to ARM address
+    mbox[28] &= mmio.MBOX.BUS_ADDRESS_MASK; //convert GPU address to ARM address
 
     width = mbox[5]; //get actual physical width
     height = mbox[6]; //get actual physical height
