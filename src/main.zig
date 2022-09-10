@@ -41,13 +41,39 @@ fn printTask2(interval: u64) callconv(.C) void {
 
 fn printTask(interval: u64) callconv(.C) void {
     var timer_value: u32 = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
-    while (true) {
+
+    var up: bool = true;
+    var i: u32 = 0;
+    while (true) : (i += 1) {
         asm volatile ("nop");
 
         const value = @atomicLoad(u32, &interrupts.time_counter, .SeqCst);
         if (value - timer_value > interval) {
             timer_value = value;
             std.log.info("  Timer: {}", .{value});
+        }
+
+        if (i == 128) {
+            i = 0;
+            up = !up;
+        }
+
+        const a = i / 32;
+        if (a != 3) {
+            var row: u32 = 0;
+            while (row < framebuffer.height) : (row += 1) {
+                var row_data = framebuffer.buffer[(framebuffer.pitch * row)..];
+                var col: u32 = 0;
+                while (col < framebuffer.width) : (col += 1) {
+                    const pix_data = row_data[(col * 4)..][0..4];
+
+                    if (up) {
+                        pix_data[a] +|= 8;
+                    } else {
+                        pix_data[a] -|= 8;
+                    }
+                }
+            }
         }
 
         Task.stopForNow();
@@ -85,7 +111,8 @@ export fn main() callconv(.C) noreturn {
             var col: u32 = 0;
             while (col < framebuffer.width) : (col += 1) {
                 const pix_data = row_data[(col * 4)..][0..4];
-                pix_data[0] = 255;
+
+                pix_data[0] = 0;
                 pix_data[1] = 0;
                 pix_data[2] = 0;
                 pix_data[3] = 255;
