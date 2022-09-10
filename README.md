@@ -39,6 +39,7 @@
 - Quick-reference for instructions - https://courses.cs.washington.edu/courses/cse469/19wi/arm64.pdf
 - Some maybe-useful ARMv8 info - https://m.youtube.com/watch?v=6OfIzhuw1RE
 - Frame buffer - https://forums.raspberrypi.com/viewtopic.php?t=155825
+- Ask GPU where its memory is - https://forums.raspberrypi.com/viewtopic.php?t=209388
 
 ## Doc Sources
 - `RPi Model 3B+ Peripherals Manual.pdf` - https://github.com/raspberrypi/documentation/files/1888662/BCM2837-ARM-Peripherals.-.Revised.-.V2-1.pdf
@@ -62,7 +63,7 @@ Linker Script           | `src/link.ld`
 ## To Do
 - Page mapping utilities
 - Receive data from UART
-- frame buffer
+- handle GPU memory in the allocator
 - FAT32 handler
 - syscalls and user-space executables
 - Debug stuffs
