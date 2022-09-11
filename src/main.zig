@@ -157,7 +157,7 @@ export fn main() callconv(.C) noreturn {
 
     while (true) {
         asm volatile ("nop");
-        mmio.uartSpinWrite("Kernel Main Begin. Hello, World!\n");
+        mmio.uartSpinWrite("Kernel Main Begin. Hello, World!\r\n");
         // Task.stopForNow();
     }
 }
