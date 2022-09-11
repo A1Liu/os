@@ -126,9 +126,10 @@ bss_init_loop:
   ldr     x2, =start_kernel
 
   ldr     x0, =SCTLR_MMU_ENABLED
-  msr     sctlr_el1, x0
+  #msr     sctlr_el1, x0
 
-  br      x2
+  # br      x2
+  b start_kernel
 
 
 start_kernel:

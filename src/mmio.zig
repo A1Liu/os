@@ -14,7 +14,8 @@ pub const constants = struct {
     pub const TIMER_CS_M1: u32 = 1 << 1;
 };
 
-pub const MMIO_BASE: u64 = 0xFFFF00003F000000;
+// pub const MMIO_BASE: u64 = 0xFFFF00003F000000;
+pub const MMIO_BASE: u64 = 0x000000003F000000;
 const MBOX_BASE = MMIO_BASE + 0x0000B880;
 const GPIO_BASE = MMIO_BASE + 0x200000;
 const AUX_BASE = (GPIO_BASE + 0x15000);
@@ -248,7 +249,7 @@ pub fn log(
     // Task.switchToAndSleep(uart_task);
 }
 
-fn uartSpinWrite(str: []const u8) void {
+pub fn uartSpinWrite(str: []const u8) void {
     for (str) |c| {
         // Wait for UART to become ready to transmit.
         while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}

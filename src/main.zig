@@ -122,13 +122,13 @@ export fn main() callconv(.C) noreturn {
     // std.debug.assert(page3.ptr != page2.ptr);
     // std.debug.assert(page3.len != page2.len);
 
-    const sp = arm.readSp();
-    std.log.info("main sp: {x}", .{sp});
+    // const sp = arm.readSp();
+    // std.log.info("main sp: {x}", .{sp});
 
-    const el = arm.mrs("CurrentEL");
+    // const el = arm.mrs("CurrentEL");
 
-    std.log.info("Kernel Main Begin. Hello, World!", .{});
-    std.log.info("Exception Level: {}", .{el >> 2});
+    // std.log.info("Kernel Main Begin. Hello, World!", .{});
+    // std.log.info("Exception Level: {}", .{el >> 2});
 
     // fb_result catch {
     //     // handle the error after init is done
@@ -145,18 +145,19 @@ export fn main() callconv(.C) noreturn {
     // _ = Task.init(printTask, 200000) catch unreachable;
     // _ = Task.init(printTask2, 100000) catch unreachable;
 
-    std.log.info(
-        \\
-        \\-----------------------------------------
-        \\
-        \\          Entering busy loop
-        \\
-        \\-----------------------------------------
-        \\
-    , .{});
+    // std.log.info(
+    //     \\
+    //     \\-----------------------------------------
+    //     \\
+    //     \\          Entering busy loop
+    //     \\
+    //     \\-----------------------------------------
+    //     \\
+    // , .{});
 
     while (true) {
         asm volatile ("nop");
+        mmio.uartSpinWrite("Kernel Main Begin. Hello, World!\n");
         // Task.stopForNow();
     }
 }
