@@ -40,29 +40,6 @@ pub const BitSet = struct {
         };
     }
 
-    // pub fn init(arena: []MaskInt, bit_length: usize, initialValue: bool) @This() {
-    //     const arena_bit_length = arena.len * @bitSizeOf(MaskInt);
-    //     assert(bit_length <= arena_bit_length);
-    //     assert(bit_length > arena_bit_length - @bitSizeOf(MaskInt));
-
-    //     const allSet = ~@as(MaskInt, 0);
-    //     const initial = if (initialValue) allSet else @as(MaskInt, 0);
-
-    //     for (arena) |*slot| {
-    //         slot.* = initial;
-    //     }
-
-    //     if (bit_length < arena_bit_length) {
-    //         const last_slot = &arena[arena.len - 1];
-    //         last_slot.* &= allSet >> (arena_bit_length - bit_length);
-    //     }
-
-    //     return .{
-    //         .bit_length = bit_length,
-    //         .masks = arena.ptr,
-    //     };
-    // }
-
     /// Returns true if the bit at the specified index
     /// is present in the set, false otherwise.
     pub fn isSet(self: Self, index: usize) bool {
@@ -244,4 +221,11 @@ pub const BitSet = struct {
     fn numMasks(bit_length: usize) usize {
         return (bit_length + (@bitSizeOf(MaskInt) - 1)) / @bitSizeOf(MaskInt);
     }
+};
+
+pub const Queue = extern struct {
+    len: u32 align(4096),
+    capacity: u32,
+    read_next: u64,
+    write_next: u64,
 };
