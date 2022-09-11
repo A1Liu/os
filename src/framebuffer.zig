@@ -74,6 +74,9 @@ pub fn init() !void {
     // and also equivalent to code found in a Raspberry Pi 3b+ tutorial:
     //      https://github.com/bztsrc/raspi3-tutorial/blob/master/09_framebuffer/lfb.c
     //
+    // The goal is simply to convert the GPU bus address to a real physical
+    // address in ARM memory.
+    //
     //                                      - Albert Liu, Sep 10, 2022 Sat 00:14 EDT
     mbox[28] &= mmio.MBOX.BUS_ADDRESS_MASK; //convert GPU address to ARM address
 
