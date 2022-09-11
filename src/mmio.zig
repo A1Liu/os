@@ -81,10 +81,10 @@ pub inline fn put32(comptime reg: MmioRegister, data: u32) void {
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson01/rpi-os.md#mini-uart-initialization
 pub fn init() void {
-    uart_task = Task.init(uartTask, 0) catch unreachable;
-    queue_head.str = "";
-    queue_head.task = uart_task;
-    queue_tail = &queue_head;
+    // uart_task = Task.init(uartTask, 0) catch unreachable;
+    // queue_head.str = "";
+    // queue_head.task = uart_task;
+    // queue_tail = &queue_head;
 
     var selector = get32(.GPFSEL1);
     selector &= ~@as(u32, 0b111 << 12); // clean gpio14
@@ -105,8 +105,9 @@ pub fn init() void {
     //p 13, Peripherals Manual:
     // - bits 3:2 must be 1 for interrupts to be enabled
     // - bit 1 must be set for transmit interrupts
-    const a: u32 = (1 << 1) | (0x11 << 2);
-    put32(.AUX_MU_IER_REG, a);
+    // const a: u32 = (1 << 1) | (0x11 << 2);
+    // put32(.AUX_MU_IER_REG, a);
+    put32(.AUX_MU_IER_REG, 0);
 
     put32(.AUX_MU_LCR_REG, 3); //Enable 8 bit mode
     put32(.AUX_MU_MCR_REG, 0); //Set RTS line to be always high
@@ -231,18 +232,20 @@ pub fn log(
 
     if (output.len == 0) return;
 
-    const q_tail = &queue_tail;
+    uartSpinWrite(output);
 
-    var node = Node{ .task = scheduler.Task.current(), .str = output };
-    var tail = @atomicLoad(*Node, q_tail, .SeqCst);
-    while (@cmpxchgWeak(*Node, q_tail, tail, &node, .SeqCst, .SeqCst)) |new| {
-        tail = new;
-    }
+    // const q_tail = &queue_tail;
 
-    @atomicStore(?*const Node, &tail.next, &node, .SeqCst);
+    // var node = Node{ .task = scheduler.Task.current(), .str = output };
+    // var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+    // while (@cmpxchgWeak(*Node, q_tail, tail, &node, .SeqCst, .SeqCst)) |new| {
+    //     tail = new;
+    // }
 
-    uart_task.wake();
-    Task.switchToAndSleep(uart_task);
+    // @atomicStore(?*const Node, &tail.next, &node, .SeqCst);
+
+    // uart_task.wake();
+    // Task.switchToAndSleep(uart_task);
 }
 
 fn uartSpinWrite(str: []const u8) void {
