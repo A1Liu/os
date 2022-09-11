@@ -84,43 +84,43 @@ fn printTask(interval: u64) callconv(.C) void {
 export fn main() callconv(.C) noreturn {
     memory.initProtections();
 
-    interrupts.initVectors();
+    // interrupts.initVectors();
 
-    scheduler.init();
+    // scheduler.init();
 
-    const fb_result = framebuffer.init();
+    // const fb_result = framebuffer.init();
 
-    memory.initAllocator();
+    // memory.initAllocator();
 
     mmio.init();
 
     // This doesn't work when these two are moved around; something's
     // obviously wrong but I have no idea what.
-    interrupts.initInterrupts();
-    interrupts.enableIrqs();
+    // interrupts.initInterrupts();
+    // interrupts.enableIrqs();
 
-    {
-        var rows = framebuffer.Rows{};
-        while (rows.next()) |row| {
-            for (row) |*pix_data| {
-                pix_data[0] = 0;
-                pix_data[1] = 0;
-                pix_data[2] = 0;
-                pix_data[3] = 255;
-            }
-        }
-    }
+    // {
+    //     var rows = framebuffer.Rows{};
+    //     while (rows.next()) |row| {
+    //         for (row) |*pix_data| {
+    //             pix_data[0] = 0;
+    //             pix_data[1] = 0;
+    //             pix_data[2] = 0;
+    //             pix_data[3] = 255;
+    //         }
+    //     }
+    // }
 
-    const page = memory.allocPages(1, false) catch unreachable;
-    std.debug.assert(page.len == 4096);
-    memory.releasePages(page.ptr, 1);
-    const page2 = memory.allocPages(1, false) catch unreachable;
-    std.debug.assert(page.ptr == page2.ptr);
-    std.debug.assert(page.len == page2.len);
+    // const page = memory.allocPages(1, false) catch unreachable;
+    // std.debug.assert(page.len == 4096);
+    // memory.releasePages(page.ptr, 1);
+    // const page2 = memory.allocPages(1, false) catch unreachable;
+    // std.debug.assert(page.ptr == page2.ptr);
+    // std.debug.assert(page.len == page2.len);
 
-    const page3 = memory.allocPages(20, false) catch unreachable;
-    std.debug.assert(page3.ptr != page2.ptr);
-    std.debug.assert(page3.len != page2.len);
+    // const page3 = memory.allocPages(20, false) catch unreachable;
+    // std.debug.assert(page3.ptr != page2.ptr);
+    // std.debug.assert(page3.len != page2.len);
 
     const sp = arm.readSp();
     std.log.info("main sp: {x}", .{sp});
@@ -130,20 +130,20 @@ export fn main() callconv(.C) noreturn {
     std.log.info("Kernel Main Begin. Hello, World!", .{});
     std.log.info("Exception Level: {}", .{el >> 2});
 
-    fb_result catch {
-        // handle the error after init is done
-        std.log.info("framebuffer init failed", .{});
-        unreachable;
-    };
+    // fb_result catch {
+    //     // handle the error after init is done
+    //     std.log.info("framebuffer init failed", .{});
+    //     unreachable;
+    // };
 
-    std.log.info("\nframebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
-    std.log.info("  ptr={*},len={}", .{ framebuffer.buffer.ptr, framebuffer.buffer.len });
-    std.log.info("  pitch={}\n", .{framebuffer.pitch});
+    // std.log.info("\nframebuffer init succeeded: {}x{}", .{ framebuffer.width, framebuffer.height });
+    // std.log.info("  ptr={*},len={}", .{ framebuffer.buffer.ptr, framebuffer.buffer.len });
+    // std.log.info("  pitch={}\n", .{framebuffer.pitch});
 
     // std.log.info("bss value: {*}", .{globals});
 
-    _ = Task.init(printTask, 200000) catch unreachable;
-    _ = Task.init(printTask2, 100000) catch unreachable;
+    // _ = Task.init(printTask, 200000) catch unreachable;
+    // _ = Task.init(printTask2, 100000) catch unreachable;
 
     std.log.info(
         \\
@@ -156,6 +156,7 @@ export fn main() callconv(.C) noreturn {
     , .{});
 
     while (true) {
-        Task.stopForNow();
+        asm volatile ("nop");
+        // Task.stopForNow();
     }
 }

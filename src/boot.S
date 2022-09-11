@@ -25,6 +25,14 @@ main_core:
   ldr     x0, =CPACR_VALUE
   msr     cpacr_el1, x0
 
+  # Copy contents of cpacr to x1
+  mrs     x0, cpacr_el1
+  # Write to bit 20 of X1. (Enable FPU and SIMD)
+  orr     x0, x0, #(0x3 << 20)
+
+  # Write contents of X1 to CPACR
+  msr     cpacr_el1, x0
+
   # Use an instruction barrier here to wait until
   # the CPACR write finishes
   # https://developer.arm.com/documentation/100941/0101/Barriers
