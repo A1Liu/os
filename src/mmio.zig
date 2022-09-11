@@ -251,6 +251,12 @@ pub fn log(
 
 pub fn uartSpinWrite(str: []const u8) void {
     for (str) |c| {
+        if (c == '\n') {
+            while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}
+
+            put32(.AUX_MU_IO_REG, '\r');
+        }
+
         // Wait for UART to become ready to transmit.
         while ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {}
 
