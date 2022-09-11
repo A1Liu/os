@@ -223,17 +223,18 @@ pub fn log(
     scheduler.preemptDisable();
     defer scheduler.preemptEnable();
 
+    _ = args;
     _ = scope;
     _ = message_level;
 
-    var buf: [256]u8 = undefined;
-    const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
-        panic("Log failed, message too long", null);
-    };
+    // var buf: [256]u8 = undefined;
+    // const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
+    //     panic("Log failed, message too long", null);
+    // };
 
-    if (output.len == 0) return;
+    // if (output.len == 0) return;
 
-    uartSpinWrite(output);
+    uartSpinWrite(fmt ++ "\n");
 
     // const q_tail = &queue_tail;
 

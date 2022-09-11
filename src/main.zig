@@ -157,8 +157,9 @@ export fn main() callconv(.C) noreturn {
 
     while (true) {
         asm volatile ("nop");
-        mmio.uartSpinWrite("Kernel Main Begin. Hello, World!\n");
-        // std.log.info("Kernel Main Begin. Hello, World!", .{});
+        mmio.uartSpinWrite("Kernel Main Begin. Hello, World 1!\n");
+
+        std.log.info("Kernel Main Begin. Hello, 2!", .{});
         // Task.stopForNow();
     }
 }
