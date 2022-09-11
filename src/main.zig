@@ -125,10 +125,11 @@ export fn main() callconv(.C) noreturn {
     // const sp = arm.readSp();
     // std.log.info("main sp: {x}", .{sp});
 
-    // const el = arm.mrs("CurrentEL");
+    // Exception level is 1
+    const el = arm.mrs("CurrentEL") >> 2;
 
     // std.log.info("Kernel Main Begin. Hello, World!", .{});
-    // std.log.info("Exception Level: {}", .{el >> 2});
+    // std.log.info("Exception Level: {}", .{el});
 
     // fb_result catch {
     //     // handle the error after init is done
@@ -155,11 +156,20 @@ export fn main() callconv(.C) noreturn {
     //     \\
     // , .{});
 
-    while (true) {
+    var i: u32 = 0;
+    while (true) : (i += 1) {
         asm volatile ("nop");
-        mmio.uartSpinWrite("Kernel Main Begin. Hello, World 1!\n");
+        if (el == 1) {
+            mmio.uartSpinWrite("Kernel Main Begin. Hello, World 1!\n");
+        }
 
-        std.log.info("Kernel Main Begin. Hello, 2!", .{});
+        if (el == 2) {
+            mmio.uartSpinWrite("Kernel Main Begin. Hello, World 3!\n");
+        }
+
+        // std.log.info("Kernel Main Begin. Hello, {}!", .{i});
+        // std.log.info("Kernel Main Begin. {}!", .{3});
+        // std.log.info("Kernel Main Begin. 1 {}!", .{4});
         // Task.stopForNow();
     }
 }
