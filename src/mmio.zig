@@ -227,14 +227,21 @@ pub fn log(
     _ = scope;
     _ = message_level;
 
-    // var buf: [256]u8 = undefined;
+    var buf: [256]u8 = undefined;
     // const output = std.fmt.bufPrint(&buf, fmt ++ "\n", args) catch {
     //     panic("Log failed, message too long", null);
     // };
 
+    if (fmt.len + 1 > buf.len) return;
+    for (fmt) |c, i| {
+        buf[i] = c;
+    }
+
+    buf[fmt.len] = '\n';
+
     // if (output.len == 0) return;
 
-    uartSpinWrite(fmt ++ "\n");
+    uartSpinWrite(buf[0..(fmt.len + 1)]);
 
     // const q_tail = &queue_tail;
 
