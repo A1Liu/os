@@ -171,10 +171,12 @@ export fn main() callconv(.C) noreturn {
 
     mmio.uartSpinWrite("instructions succeeded\n");
 
-    const a = mmio.fmtIntHex(16);
+    const a = [1]u8{'0'} ** 16;
     mmio.uartSpinWrite("0x");
     mmio.uartSpinWrite(&a);
     mmio.uartSpinWrite("\n");
+
+    _ = mmio.fmtIntHex(16);
 
     // std.log.info("Kernel Main Begin. Hello, {}!", .{10});
 
@@ -182,8 +184,7 @@ export fn main() callconv(.C) noreturn {
 
     mmio.uartSpinWrite("Entering busy loop\n");
 
-    var i: u32 = 0;
-    while (true) : (i += 1) {
+    while (true) {
         asm volatile ("nop");
     }
 }
