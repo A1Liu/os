@@ -293,11 +293,9 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) nore
 
     _ = error_return_trace;
 
-    scheduler.preemptDisable();
+    // scheduler.preemptDisable();
 
-    put32(.AUX_MU_CNTL_REG, 0); //Disable auto flow control and disable receiver and transmitter (for now)
     put32(.AUX_MU_IER_REG, 0); //Disable receive and transmit interrupts
-    put32(.AUX_MU_CNTL_REG, 3); //Finally, enable transmitter and receiver
 
     uartSpinWrite("PANICKED: ");
     uartSpinWrite(msg);
