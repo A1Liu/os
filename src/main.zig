@@ -180,6 +180,7 @@ export fn main() callconv(.C) noreturn {
 
     // std.log.info("Kernel Main Begin. Hello, {}!", .{10});
 
+    // Fails to reach this next line
     mmio.uartSpinWrite("Log succeeded\n");
 
     mmio.uartSpinWrite("Entering busy loop\n");
