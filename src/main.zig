@@ -160,7 +160,25 @@ export fn main() callconv(.C) noreturn {
         \\
     );
 
-    std.log.info("Kernel Main Begin. Hello, {}!", .{10});
+    asm volatile ("uaddlv h1, v0.8b");
+    asm volatile ("ldr q0, [sp]");
+    asm volatile ("fmov d0, x8");
+    asm volatile ("cnt   v0.8b, v0.8b");
+    asm volatile ("ldur x8, [sp, #-64]");
+    asm volatile ("cset w8, ne");
+
+    // untested
+
+    mmio.uartSpinWrite("instructions succeeded\n");
+
+    const a = mmio.fmtIntHex(16);
+    mmio.uartSpinWrite("0x");
+    mmio.uartSpinWrite(&a);
+    mmio.uartSpinWrite("\n");
+
+    // std.log.info("Kernel Main Begin. Hello, {}!", .{10});
+
+    mmio.uartSpinWrite("Log succeeded\n");
 
     mmio.uartSpinWrite("Entering busy loop\n");
 

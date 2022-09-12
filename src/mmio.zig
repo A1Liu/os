@@ -220,8 +220,8 @@ pub fn log(
     comptime fmt: []const u8,
     args: anytype,
 ) void {
-    scheduler.preemptDisable();
-    defer scheduler.preemptEnable();
+    // scheduler.preemptDisable();
+    // defer scheduler.preemptEnable();
 
     _ = args;
     _ = scope;
@@ -271,6 +271,21 @@ pub fn uartSpinWrite(str: []const u8) void {
 
         put32(.AUX_MU_IO_REG, c);
     }
+}
+
+const characters = "0123456789ABCDEF";
+pub fn fmtIntHex(value_: u64) [16]u8 {
+    var bytes: [16]u8 = undefined;
+
+    var i: u32 = 0;
+    var value = value_;
+    while (i < 16) : (i += 1) {
+        const c = characters[value & 0xF];
+        value >>= 4;
+        bytes[16 - i - 1] = c;
+    }
+
+    return bytes;
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
