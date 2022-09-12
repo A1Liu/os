@@ -127,6 +127,7 @@ export fn main() callconv(.C) noreturn {
 
     // Exception level is 1
     const el = arm.mrs("CurrentEL") >> 2;
+    _ = el;
 
     // std.log.info("Kernel Main Begin. Hello, World!", .{});
     // std.log.info("Exception Level: {}", .{el});
@@ -146,30 +147,25 @@ export fn main() callconv(.C) noreturn {
     // _ = Task.init(printTask, 200000) catch unreachable;
     // _ = Task.init(printTask2, 100000) catch unreachable;
 
-    // std.log.info(
-    //     \\
-    //     \\-----------------------------------------
-    //     \\
-    //     \\          Entering busy loop
-    //     \\
-    //     \\-----------------------------------------
-    //     \\
-    // , .{});
+    // clear the screen
+    mmio.uartSpinWrite("\x1Bc");
+
+    mmio.uartSpinWrite(
+        \\
+        \\-----------------------------------------
+        \\
+        \\    Kernel Main Begin. Hello, World!
+        \\
+        \\-----------------------------------------
+        \\
+    );
+
+    std.log.info("Kernel Main Begin. Hello, {}!", .{10});
+
+    mmio.uartSpinWrite("Entering busy loop\n");
 
     var i: u32 = 0;
     while (true) : (i += 1) {
         asm volatile ("nop");
-        if (el == 1) {
-            mmio.uartSpinWrite("Kernel Main Begin. Hello, World 1!\n");
-        }
-
-        // if (el == 2) {
-        //     mmio.uartSpinWrite("Kernel Main Begin. Hello, World 3!\n");
-        // }
-
-        // std.log.info("Kernel Main Begin. Hello, {}!", .{i});
-        // std.log.info("Kernel Main Begin. {}!", .{3});
-        // std.log.info("Kernel Main Begin. 1 {}!", .{4});
-        // Task.stopForNow();
     }
 }
