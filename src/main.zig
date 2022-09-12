@@ -163,9 +163,9 @@ export fn main() callconv(.C) noreturn {
             mmio.uartSpinWrite("Kernel Main Begin. Hello, World 1!\n");
         }
 
-        if (el == 2) {
-            mmio.uartSpinWrite("Kernel Main Begin. Hello, World 3!\n");
-        }
+        // if (el == 2) {
+        //     mmio.uartSpinWrite("Kernel Main Begin. Hello, World 3!\n");
+        // }
 
         // std.log.info("Kernel Main Begin. Hello, {}!", .{i});
         // std.log.info("Kernel Main Begin. {}!", .{3});

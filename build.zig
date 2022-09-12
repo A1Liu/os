@@ -14,12 +14,22 @@ pub fn build(b: *Builder) void {
     disabled_features.addFeature(@enumToInt(features.neon));
     disabled_features.addFeature(@enumToInt(features.perfmon));
     disabled_features.addFeature(@enumToInt(features.use_postra_scheduler));
+    const cpu_model = cpu_model: {
+        const models = Target.Cpu.Arch.allCpuModels(.aarch64);
+        for (models) |model| {
+            if (std.mem.eql(u8, model.name, "cortex_a53")) {
+                break :cpu_model model;
+            }
+        }
+
+        unreachable;
+    };
 
     const target = CrossTarget{
         .cpu_arch = Target.Cpu.Arch.aarch64,
         .os_tag = Target.Os.Tag.freestanding,
         .abi = Target.Abi.none,
-        .cpu_model = .baseline,
+        .cpu_model = .{ .explicit = cpu_model },
     };
 
     const mode = b.standardReleaseOptions();

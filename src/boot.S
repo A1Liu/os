@@ -22,22 +22,6 @@ main_core:
   ldr     x0, =SCTLR_VALUE_MMU_DISABLED
   msr     sctlr_el1, x0
 
-  #ldr     x0, =CPACR_VALUE
-  #msr     cpacr_el1, x0
-
-  # Copy contents of cpacr to x1
-  mrs     x0, cpacr_el1
-  # Write to bit 20 of X1. (Enable FPU and SIMD)
-  orr     x0, x0, #(0x3 << 20)
-
-  # Write contents of X1 to CPACR
-  msr     cpacr_el1, x0
-
-  # Use an instruction barrier here to wait until
-  # the CPACR write finishes
-  # https://developer.arm.com/documentation/100941/0101/Barriers
-  isb
-
   mrs     x0, CurrentEL
   lsr     x0, x0, 2
   cmp     x0, 3
@@ -49,9 +33,12 @@ main_core:
   ldr     x0, =SPSR_VALUE
   msr     spsr_el3, x0
 
+  msr     cptr_el3, xzr
+
   adr     x0, main_core_el1
   msr     elr_el3, x0
   b       drop_from_2
+
 
 check_drop_from_2:
   cmp     x0, 2
@@ -64,12 +51,28 @@ check_drop_from_2:
   msr     elr_el2, x0
 
 drop_from_2:
+  mov     x0, #(0x3 << 20)
+  orr     x0, x0, #(0x3 << 16)
+  msr     cptr_el2, x0
+
   ldr     x0, =HCR_VALUE
   msr     hcr_el2, x0
 
   eret
 
 main_core_el1:
+  # Write to bit 20 of X1. (Enable FPU and SIMD)
+  mov     x0, #(0x3 << 20)
+  orr     x0, x0, #(0x3 << 16)
+
+  # Write contents of X1 to CPACR
+  msr     cpacr_el1, x0
+
+  # Use an instruction barrier here to wait until
+  # the CPACR write finishes
+  # https://developer.arm.com/documentation/100941/0101/Barriers
+  isb
+
   # Clean the BSS section
   # ADR is technically a real instruction that adds an immediate to the program
   # counter, but in this case, we defined __bss_start in the link as a label,
