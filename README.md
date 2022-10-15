@@ -78,4 +78,4 @@ Mailboxes               | `src/mmio.zig`
   - FAT32 handler
   - syscalls and user-space executables
   - page mapping utilities
-  - IPC queue?
+  - IPC queue
