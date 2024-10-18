@@ -83,3 +83,4 @@ Mailboxes               | `src/mmio.zig`
   - The kernel sees file data as basically just an extended page table
   - We can build file tree stuff on top, but the underlying implementation allows you to access
     pages of a file at a time by simply accessing memory normally.
+- User-space optimization of memory? Compression, paging, etc.
