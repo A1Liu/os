@@ -51,34 +51,28 @@ pub fn build(b: *Build) void {
 
         kernel.setLinkerScript(b.path("src/link.ld"));
 
-        const kernel_step = b.addInstallArtifact(kernel, .{});
+        const copy_kern = b.addInstallArtifact(kernel, .{});
+        b.default_step.dependOn(&copy_kern.step);
 
         // const kernel_step = b.step("kernel", "Build the kernel");
         // kernel_step.dependOn(&kernel.install_step.?.step);
 
-        break :kernel_step &kernel_step.step;
+        break :kernel_step kernel;
     };
 
-    // TODO: zig objcopy will eventually be a thing, and when it is, we can
-    // remove the dependency on llvm-objcopy
-    const iso_step = iso_step: {
-        const iso_cmd_str = &[_][]const u8{
-            "llvm-objcopy",
-            "-Obinary",
-            "zig-out/bin/kernel.elf",
-            "zig-out/bin/kernel8.img",
-        };
+    b.default_step.dependOn(&kernel_step.step);
 
-        const iso_cmd = b.addSystemCommand(iso_cmd_str);
-        iso_cmd.step.dependOn(kernel_step);
+    const obj_copy = b.addObjCopy(kernel_step.getEmittedBin(), .{
+        .format = .bin,
+    });
+    // Copy the bin out of the elf
+    obj_copy.step.dependOn(&kernel_step.step);
 
-        const iso_step = b.step("img", "Build a usable img");
-        iso_step.dependOn(&iso_cmd.step);
+    // Copy the bin to the output directory
+    const copy_bin = b.addInstallBinFile(obj_copy.getOutput(), "kernel8.img");
 
-        break :iso_step iso_step;
-    };
-
-    b.default_step.dependOn(iso_step);
+    const iso_step = b.step("img", "Build a usable img");
+    iso_step.dependOn(&copy_bin.step);
 
     {
         const run_cmd_str = &[_][]const u8{
@@ -143,7 +137,7 @@ pub fn build(b: *Build) void {
         };
 
         const dump_cmd = b.addSystemCommand(dump_cmd_str);
-        dump_cmd.step.dependOn(kernel_step);
+        dump_cmd.step.dependOn(&kernel_step.step);
 
         const dump_step = b.step("dump", "Obj-Dump the Kernel ELF file");
         dump_step.dependOn(&dump_cmd.step);
