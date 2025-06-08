@@ -23,7 +23,7 @@ pub const strip_debug_info = true;
 pub const have_error_return_tracing = false;
 
 pub const log = mmio.log;
-pub const panic = mmio.panic;
+pub const panic = std.debug.FullPanic(mmio.panic);
 
 const Task = scheduler.Task;
 

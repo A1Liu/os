@@ -40,17 +40,17 @@ pub const Task = struct {
         const task_bytes = try memory.allocPages(1, false);
         errdefer memory.releasePages(task_bytes.ptr, 1);
 
-        const task = @ptrCast(*TaskInfo, task_bytes.ptr);
+        const task: *TaskInfo = @ptrCast(task_bytes.ptr);
         task.state = .running;
-        task.id = @intCast(u8, tasks.len);
+        task.id = @intCast(tasks.len);
         task.preempt_count = 1; // disable preemtion until schedule_tail
         task.priority = current_task.priority;
         task.counter = task.priority;
 
-        task.registers.x19 = @ptrToInt(task_fn);
+        task.registers.x19 = @intFromPtr(task_fn);
         task.registers.x20 = arg;
-        task.registers.pc = @ptrToInt(ret_from_fork);
-        task.registers.sp = @ptrToInt(task_bytes.ptr + 4096);
+        task.registers.pc = @intFromPtr(ret_from_fork);
+        task.registers.sp = @intFromPtr(task_bytes.ptr + 4096);
 
         try tasks.append(task);
 

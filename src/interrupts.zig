@@ -78,7 +78,7 @@ comptime {
             \\
     );
 
-    inline for (invalid_handler_names) |name, idx| {
+    for (invalid_handler_names, 0..) |name, idx| {
         const index = std.fmt.comptimePrint("{}", .{idx});
 
         asm (name ++ ":\n" ++ RegisterState.save ++
@@ -160,7 +160,7 @@ pub const RegisterState = extern struct {
         \\   stp  x30, x22, [sp, #16 * 15]
         \\   str  x23, [sp, #16 * 16]
         \\
-    ;
+        ;
 
     const pop =
         \\   ldr  x23, [sp, #16 * 16]

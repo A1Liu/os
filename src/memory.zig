@@ -41,7 +41,7 @@ const mmu_bits = struct {
     const r_el1: u64 = 0b10 << 6;
 };
 
-export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast([4096]u8, pmd_initial);
+export var kernel_memory_map_pmd: [4096]u8 align(4096) = @bitCast(pmd_initial);
 const pmd_initial = map: {
     @setEvalBranchQuota(2000);
 
@@ -51,7 +51,7 @@ const pmd_initial = map: {
 
     // Entry 0 of this map gets overwritten at boot-time, but that is
     // not important to the logic here.
-    for (pmd) |*slot, i| {
+    for (&pmd, 0..) |*slot, i| {
         var descriptor: u64 = i << 21;
 
         descriptor |= mmu_bits.valid;
@@ -75,7 +75,7 @@ export var kernel_memory_map_pte: [4096]u8 align(4096) = map: {
 
     const mair_bits = c.MT_NORMAL_NC_FLAGS << 2;
 
-    for (pte) |*slot, i| {
+    for (&pte, 0..) |*slot, i| {
         var descriptor: u64 = i << 12;
 
         descriptor |= mmu_bits.valid;
@@ -92,7 +92,7 @@ export var kernel_memory_map_pte: [4096]u8 align(4096) = map: {
         slot.* = descriptor;
     }
 
-    break :map @bitCast([4096]u8, pte);
+    break :map @bitCast(pte);
 };
 
 // These will go into bss and get initialized at runtime to all zeros;
@@ -107,7 +107,7 @@ export var kernel_memory_map_pgd: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 export var kernel_memory_map_pud: [4096]u8 align(4096) = [1]u8{0} ** 4096;
 
 fn addressPteBits(ptr: anytype) usize {
-    return (@ptrToInt(ptr) >> 12) & 511;
+    return (@intFromPtr(ptr) >> 12) & 511;
 }
 
 pub fn initProtections() void {
@@ -115,7 +115,7 @@ pub fn initProtections() void {
     const exe_end = addressPteBits(&__rodata_start);
     const ro_end = addressPteBits(&__data_start);
 
-    const pte = @ptrCast(*volatile [512]u64, &kernel_memory_map_pte);
+    const pte: *volatile [512]u64 = @ptrCast(&kernel_memory_map_pte);
 
     for (pte[exe_begin..exe_end]) |*slot| {
         slot.* |= mmu_bits.r_el1;
@@ -147,12 +147,12 @@ pub fn initProtections() void {
 
 const virtual_base: u64 = 0xffff000000000000;
 pub inline fn physicalAddress(ptr: anytype) u64 {
-    const a = @ptrToInt(ptr);
+    const a = @intFromPtr(ptr);
     return a - virtual_base;
 }
 
 pub inline fn kernelPtr(comptime T: type, address: u64) T {
-    return @intToPtr(T, address + virtual_base);
+    return @ptrFromInt(address + virtual_base);
 }
 
 const class_count = 12;
@@ -207,7 +207,7 @@ var classes = classes: {
         &class8, &class9, &class10,
     };
 
-    for (class_arrays) |array, i| {
+    for (class_arrays, 0..) |array, i| {
         classes_value[i] = .{
             .buddies = BitSet.initRaw(array, buddyInfo(buddy_end_page, i).bitset_index),
             .freelist = null,
@@ -229,11 +229,11 @@ pub fn initAllocator() void {
     // The `classes` object starts in a valid state, whose meaning is "all data
     // is allocated." This means we can safely just release the pages that
     // are usable.
-    const begin = @ptrCast([*]align(4096) u8, @alignCast(4096, &__bss_end));
+    const begin: [*]align(4096) u8 = @ptrCast(@alignCast(&__bss_end));
     const end = mmio.MMIO_BASE;
 
-    const page_count = (end - @ptrToInt(begin)) / 4096;
-    releasePagesImpl(begin, @intCast(u32, page_count));
+    const page_count = (end - @intFromPtr(begin)) / 4096;
+    releasePagesImpl(begin, @intCast(page_count));
 }
 
 fn buddyInfo(page: u64, class: u6) BuddyInfo {
@@ -287,13 +287,13 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
         const Result = struct { class: u6, freelist: *FreeBlock, count: u64 };
 
         const min_class = std.math.log2_int_ceil(u32, requested_count);
-        for (classes[min_class..]) |class, i| {
+        for (classes[min_class..], 0..) |class, i| {
             const free = class.freelist orelse continue;
 
             break :found_class Result{
                 .count = requested_count,
                 .freelist = free,
-                .class = @intCast(u6, i + min_class),
+                .class = @intCast(i + min_class),
             };
         }
 
@@ -306,7 +306,7 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
             const free = classes[i].freelist orelse continue;
 
             break :found_class Result{
-                .count = @as(u64, 1) << @truncate(u6, i),
+                .count = @as(u64, 1) << @truncate(i),
                 .freelist = free,
                 .class = i,
             };
@@ -327,7 +327,8 @@ pub fn allocPages(requested_count: u32, best_effort: bool) error{OutOfMemory}![]
     }
 
     const size = count * 4096;
-    const buf = @ptrCast([*]align(4096) u8, freelist)[0..size];
+    const freelist_cast: [*]align(4096) u8 = @ptrCast(freelist);
+    const buf = freelist_cast[0..size];
     free_memory -= size;
 
     const addr = physicalAddress(buf.ptr);
@@ -393,9 +394,9 @@ fn releasePagesImpl(data: [*]align(4096) u8, count: u32) void {
         // page in data
 
         var page = free_page;
-        for (classes[0..(class_count - 1)]) |*info, class| {
+        for (classes[0..(class_count - 1)], 0..) |*info, class| {
             // assert(is_aligned(page, 1 << class));
-            const buds = buddyInfo(page, @truncate(u6, class));
+            const buds = buddyInfo(page, @truncate(class));
 
             const buddy_is_free = info.buddies.isSet(buds.bitset_index);
             info.buddies.setValue(buds.bitset_index, !buddy_is_free);

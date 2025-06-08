@@ -53,7 +53,7 @@ pub const BitSet = struct {
         var total: usize = 0;
         for (self.masks[0..num_masks]) |mask| {
             // Note: This is where we depend on padding bits being zero
-            total += @popCount(usize, mask);
+            total += @popCount(mask);
         }
         return total;
     }
@@ -82,10 +82,10 @@ pub const BitSet = struct {
         if (range.start == range.end) return;
 
         const start_mask_index = maskIndex(range.start);
-        const start_bit = @truncate(ShiftInt, range.start);
+        const start_bit: ShiftInt = @truncate(range.start);
 
         const end_mask_index = maskIndex(range.end);
-        const end_bit = @truncate(ShiftInt, range.end);
+        const end_bit: ShiftInt = @truncate(range.end);
 
         if (start_mask_index == end_mask_index) {
             var mask1 = std.math.boolMask(MaskInt, true) << start_bit;
@@ -136,7 +136,7 @@ pub const BitSet = struct {
     pub fn toggleSet(self: *Self, toggles: Self) void {
         assert(toggles.bit_length == self.bit_length);
         const num_masks = numMasks(self.bit_length);
-        for (self.masks[0..num_masks]) |*mask, i| {
+        for (self.masks[0..num_masks], 0..) |*mask, i| {
             mask.* ^= toggles.masks[i];
         }
     }
@@ -153,7 +153,7 @@ pub const BitSet = struct {
         }
 
         const padding_bits = num_masks * @bitSizeOf(MaskInt) - bit_length;
-        const last_item_mask = (~@as(MaskInt, 0)) >> @intCast(ShiftInt, padding_bits);
+        const last_item_mask = (~@as(MaskInt, 0)) >> @intCast(padding_bits);
         self.masks[num_masks - 1] &= last_item_mask;
     }
 
@@ -164,7 +164,7 @@ pub const BitSet = struct {
     pub fn setUnion(self: *Self, other: Self) void {
         assert(other.bit_length == self.bit_length);
         const num_masks = numMasks(self.bit_length);
-        for (self.masks[0..num_masks]) |*mask, i| {
+        for (self.masks[0..num_masks], 0..) |*mask, i| {
             mask.* |= other.masks[i];
         }
     }
@@ -176,7 +176,7 @@ pub const BitSet = struct {
     pub fn setIntersection(self: *Self, other: Self) void {
         assert(other.bit_length == self.bit_length);
         const num_masks = numMasks(self.bit_length);
-        for (self.masks[0..num_masks]) |*mask, i| {
+        for (self.masks[0..num_masks], 0..) |*mask, i| {
             mask.* &= other.masks[i];
         }
     }
@@ -191,7 +191,7 @@ pub const BitSet = struct {
             mask += 1;
             offset += @bitSizeOf(MaskInt);
         } else return null;
-        return offset + @ctz(usize, mask[0]);
+        return offset + @ctz(mask[0]);
     }
 
     /// Finds the index of the first set bit, and unsets it.
@@ -204,19 +204,19 @@ pub const BitSet = struct {
             mask += 1;
             offset += @bitSizeOf(MaskInt);
         } else return null;
-        const index = @ctz(usize, mask[0]);
+        const index = @ctz(mask[0]);
         mask[0] &= (mask[0] - 1);
         return offset + index;
     }
 
     fn maskBit(index: usize) MaskInt {
-        return @as(MaskInt, 1) << @truncate(ShiftInt, index);
+        return @as(MaskInt, 1) << @truncate(index);
     }
     fn maskIndex(index: usize) usize {
         return index >> @bitSizeOf(ShiftInt);
     }
     fn boolMaskBit(index: usize, value: bool) MaskInt {
-        return @as(MaskInt, @boolToInt(value)) << @intCast(ShiftInt, index);
+        return @as(MaskInt, @intFromBool(value)) << @intCast(index);
     }
     fn numMasks(bit_length: usize) usize {
         return (bit_length + (@bitSizeOf(MaskInt) - 1)) / @bitSizeOf(MaskInt);

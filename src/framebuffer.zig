@@ -96,7 +96,7 @@ pub const Rows = struct {
         defer self.begin += 1;
 
         const row_data = buffer[(pitch * self.begin)..];
-        const out = @ptrCast([*][4]u8, row_data.ptr);
+        const out: [*][4]u8 = @ptrCast(row_data.ptr);
 
         return out[0..width];
     }

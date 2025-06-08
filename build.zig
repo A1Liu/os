@@ -1,19 +1,19 @@
 const std = @import("std");
-const Builder = @import("std").build.Builder;
-const Target = @import("std").Target;
-const CrossTarget = @import("std").zig.CrossTarget;
-const Feature = @import("std").Target.Cpu.Feature;
+const Build = std.Build;
+const Target = std.Target;
+const CrossTarget = Target.Query;
+const Feature = Target.Cpu.Feature;
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *Build) void {
     const features = Target.aarch64.Feature;
 
     var disabled_features = Feature.Set.empty;
 
-    disabled_features.addFeature(@enumToInt(features.ete));
-    disabled_features.addFeature(@enumToInt(features.fuse_aes));
-    disabled_features.addFeature(@enumToInt(features.neon));
-    disabled_features.addFeature(@enumToInt(features.perfmon));
-    disabled_features.addFeature(@enumToInt(features.use_postra_scheduler));
+    disabled_features.addFeature(@intFromEnum(features.ete));
+    disabled_features.addFeature(@intFromEnum(features.fuse_aes));
+    disabled_features.addFeature(@intFromEnum(features.neon));
+    disabled_features.addFeature(@intFromEnum(features.perfmon));
+    disabled_features.addFeature(@intFromEnum(features.use_postra_scheduler));
     const cpu_model = cpu_model: {
         const models = Target.Cpu.Arch.allCpuModels(.aarch64);
         for (models) |model| {
@@ -25,33 +25,38 @@ pub fn build(b: *Builder) void {
         unreachable;
     };
 
-    const target = CrossTarget{
+    const target = b.resolveTargetQuery(Target.Query{
         .cpu_arch = Target.Cpu.Arch.aarch64,
         .os_tag = Target.Os.Tag.freestanding,
         .abi = Target.Abi.none,
         .cpu_model = .{ .explicit = cpu_model },
-    };
+    });
 
-    const mode = b.standardReleaseOptions();
+    const optimize = b.standardOptimizeOption(.{});
 
     const kernel_step = kernel_step: {
-        const kernel = b.addExecutable("kernel.elf", "src/main.zig");
+        const module = b.createModule(.{ // this line was added
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        module.addIncludePath(b.path("src"));
 
-        kernel.addIncludeDir("src");
-        kernel.addAssemblyFile("src/boot.S");
+        const kernel = b.addExecutable(.{
+            .name = "kernel.elf",
+            .root_module = module,
+        });
 
-        kernel.setTarget(target);
+        kernel.addAssemblyFile(b.path("src/boot.S"));
 
-        kernel.setBuildMode(mode);
+        kernel.setLinkerScript(b.path("src/link.ld"));
 
-        kernel.setLinkerScriptPath(.{ .path = "src/link.ld" });
+        const kernel_step = b.addInstallArtifact(kernel, .{});
 
-        kernel.install();
+        // const kernel_step = b.step("kernel", "Build the kernel");
+        // kernel_step.dependOn(&kernel.install_step.?.step);
 
-        const kernel_step = b.step("kernel", "Build the kernel");
-        kernel_step.dependOn(&kernel.install_step.?.step);
-
-        break :kernel_step kernel_step;
+        break :kernel_step &kernel_step.step;
     };
 
     // TODO: zig objcopy will eventually be a thing, and when it is, we can

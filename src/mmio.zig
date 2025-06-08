@@ -73,11 +73,13 @@ const MmioRegister = enum(u64) {
 };
 
 pub inline fn get32(comptime reg: MmioRegister) u32 {
-    return @intToPtr(*volatile u32, @enumToInt(reg)).*;
+    const ptr: *volatile u32 = @ptrFromInt(@intFromEnum(reg));
+    return ptr.*;
 }
 
 pub inline fn put32(comptime reg: MmioRegister, data: u32) void {
-    @intToPtr(*volatile u32, @enumToInt(reg)).* = data;
+    const ptr: *volatile u32 = @ptrFromInt(@intFromEnum(reg));
+    ptr.* = data;
 }
 
 // https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson01/rpi-os.md#mini-uart-initialization
@@ -133,7 +135,7 @@ pub fn uartTask(_: u64) callconv(.C) void {
     const q_tail = &queue_tail;
 
     outer: while (true) {
-        for (q_head.str) |c, i| {
+        for (q_head.str, 0..) |c, i| {
             if ((get32(.AUX_MU_LSR_REG) & 0x20) == 0) {
                 q_head.str = q_head.str[i..];
 
@@ -158,7 +160,7 @@ pub fn uartTask(_: u64) callconv(.C) void {
                 if (@atomicLoad(?*Node, &q_head.next, .SeqCst)) |n| break :next n;
 
                 // This is technically not required
-                var tail = @atomicLoad(*Node, q_tail, .SeqCst);
+                const tail = @atomicLoad(*Node, q_tail, .SeqCst);
                 std.debug.assert(tail == q_head);
 
                 Task.sleep();
@@ -223,7 +225,6 @@ pub fn log(
     // scheduler.preemptDisable();
     // defer scheduler.preemptEnable();
 
-    _ = args;
     _ = scope;
     _ = message_level;
 
@@ -288,10 +289,10 @@ pub fn fmtIntHex(value_: u64) [16]u8 {
     return bytes;
 }
 
-pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
-    @setCold(true);
+pub fn panic(msg: []const u8, first_trace_addr: ?usize) noreturn {
+    @branchHint(.cold);
 
-    _ = error_return_trace;
+    _ = first_trace_addr;
 
     // scheduler.preemptDisable();
 
@@ -322,7 +323,8 @@ pub const MBOX = struct {
 
     pub fn spinCall(call: u4) bool {
         const mask = ~@as(u32, 0xF);
-        const r = @intCast(u32, mem.physicalAddress(mbox) & mask) | call;
+        const masked: u32 = @intCast(mem.physicalAddress(mbox) & mask);
+        const r = masked | call;
 
         while (get32(.MBOX_STATUS) & MBOX.FULL != 0) {
             asm volatile ("nop");
