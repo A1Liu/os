@@ -84,3 +84,4 @@ Mailboxes               | `src/mmio.zig`
   - We can build file tree stuff on top, but the underlying implementation allows you to access
     pages of a file at a time by simply accessing memory normally.
 - User-space optimization of memory? Compression, paging, etc.
+- ECS smthn or other
